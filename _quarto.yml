@@ -25,10 +25,6 @@ book:
     - ./notebooks/06_resultados.qmd
     - ./notebooks/07_discusion.qmd
     - ./notebooks/08_conclusiones.qmd
-
-    - part: "Anexos"
-      chapters:
-        - ./notebooks/anexoA.qmd
     - ./references/references.qmd
 
 bibliography: references/references.bib
