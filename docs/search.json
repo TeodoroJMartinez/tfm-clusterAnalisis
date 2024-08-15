@@ -44,7 +44,7 @@
     "href": "notebooks/01_resumen.html#interpretación-de-resultados",
     "title": "Resumen",
     "section": "Interpretación de resultados",
-    "text": "Interpretación de resultados\nSe identificaron 2 modelos cluster de interés:\n\nUn modelo con \\(k=2\\) clusters, para datos recortados, que sugiere la correlación positiva entre el sexo (masculino) y valores altos en los indicadores relacionados con el consumo de alcohol.\nUn modelo con \\(k=3\\) clusters, para datos recortados, que no se relaciona claramente con ninguna variable del conjunto de datos, y que sugiere la existencia de tres grupos de estados en los que, además del sexo, existe una cierta influencia del número de grandes bebedores en un estado para el valor el resto de los indicadores relacionados con el consumo de alcohol.",
+    "text": "Interpretación de resultados\nSe identificaron 2 modelos cluster de interés para el análisis de los indicadores de mortalidad relacionados con el consumo de alcohol:\n\nUn modelo con \\(k=2\\) clusters, para datos recortados, que sugiere la correlación positiva entre el sexo (masculino) y valores altos de los indicadores.\nUn modelo con \\(k=3\\) clusters, para datos recortados, que sugiere una cierta influencia positiva del número de grandes bebedores en el valor del resto de los indicadores relacionados con el consumo de alcohol.",
     "crumbs": [
       "Resumen"
     ]
