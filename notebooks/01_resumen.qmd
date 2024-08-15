@@ -47,7 +47,7 @@ Se generaron varios análisis cluster no jerárquicos con $k$-means, para invest
 Se identificaron 2 modelos cluster de interés para el análisis de los indicadores de mortalidad relacionados con el consumo de alcohol:
 
 -   Un modelo con $k=2$ clusters, para datos recortados, que sugiere la correlación positiva entre el sexo (masculino) y valores altos de los indicadores.
--   Un modelo con $k=3$ clusters, para datos recortados, que sugiere una cierta influencia positiva del número de grandes bebedores en el valor del resto de los indicadores relacionados con el consumo de alcohol.
+-   Un modelo con $k=3$ clusters, para datos recortados, que sugiere una relación positiva del número de grandes bebedores en el valor del resto de los indicadores relacionados con el consumo de alcohol.
 
 ## Conclusiones y recomendaciones
 
