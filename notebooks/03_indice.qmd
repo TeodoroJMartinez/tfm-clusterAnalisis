@@ -15,4 +15,3 @@
 -   [Discusión](07_discusion.qmd)
 -   [Conclusiones](08_conclusiones.qmd)
 -   [Referencias/Bibliografía](../references/references.qmd)
--   [Anexo - Código utilizado en el estudio](anexoA.qmd)
