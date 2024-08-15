@@ -1,0 +1,18 @@
+## Índice de contenido {.unnumbered}
+
+-   [Resumen](01_resumen.qmd)
+-   [Agradecimientos](02_agradecimientos.qmd)
+-   [Índice](03_indice.qmd)
+-   [Introducción](04_Introduccion.qmd)
+-   [Material y métodos](05_metodologia.qmd)
+    -   [Configuración](05a_config.qmd)
+    -   [Ingesta](05b_ingesta.qmd)
+    -   [Limpieza](05c_limpieza.qmd)
+    -   [Análisis exploratorio de datos](05d_eda.qmd)
+    -   [Transformación](05e_transformacion.qmd)
+    -   [Análisis clúster no jerárquico ($k$-means)](05f_analysis.qmd)
+-   [Resultados](06_resultados.qmd)
+-   [Discusión](07_discusion.qmd)
+-   [Conclusiones](08_conclusiones.qmd)
+-   [Referencias/Bibliografía](../references/references.qmd)
+-   [Anexo - Código utilizado en el estudio](anexoA.qmd)

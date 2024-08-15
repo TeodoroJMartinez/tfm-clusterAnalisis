@@ -1,0 +1,1585 @@
+---
+subtitle: "Material y métodos"
+author: Teodoro José Martínez Arán
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+## Subproceso 02 - Limpieza {.unnumbered}
+
+## Descripción del subproceso
+
+Subproceso destinado a identificar la información sucia, incorrecta, incompleta, imprecisa, irrelevante o incómoda, y a reingestar, modificar, reemplazar o borrar esta información no deseada de acuerdo a la necesidad
+
+```{r}
+#| output: false
+#| code-fold: true
+
+# Carga de los datos para el subproceso de limpieza
+rawCdiAlcohol <- readRDS(here::here('data', 'raw', 'rawCdiAlcohol.rds'))
+rawUnderlyingCauseOfDeathAlcohol <- readRDS(
+  here::here('data', 'raw', 'rawUnderlyingCauseOfDeathAlcohol.rds')
+  )
+rawFipsCodes <- readRDS(here::here('data', 'raw', 'rawFipsCodes.rds'))
+```
+
+## Acciones del subproceso
+
+El subproceso incluye las siguientes acciones:
+
+-   02a - Identificar la información sucia, incorrecta, incompleta, imprecisa, irrelevante o incómoda
+-   02b - Reingestar, modificar, reemplazar o borrar esta información no deseada de acuerdo a la necesidad
+
+### 02a - Identificación de la información sucia, incorrecta, irrelevante, incompleta, imprecisa o incómoda
+
+#### Validación de `rawCdiAlcohol`
+
+::: {.callout-note title="1- Información sucia" collapse="true"}
+##### 1- Información sucia
+
+-   Correcto - No existe ningún problema de suciedad de datos
+
+::: {.callout-caution title="Codificación de caracteres incorrecta" collapse="true"}
+###### Codificación de caracteres incorrecta
+
+-   Correcto:
+    -   Los datasets se han ingestado en la codificación estándar **UTF-8**
+    -   No se han registrado advertencias durante la ingesta
+    -   La apariencia de los datos ingestados es correcta
+:::
+
+::: {.callout-caution title="Símbolos innecesarios ($, €, %, ... )" collapse="true"}
+###### Símbolos innecesarios (\$, €, %, ... )
+
+-   Correcto - Sin problemas en ninguna de las variables
+:::
+
+::: {.callout-caution title="Nombre de *data.frame* no acorde a estilo" collapse="true"}
+###### Nombre de *data.frame* no acorde a estilo
+
+-   Correcto - Nombre del **data.frame** en formato CamelCase
+:::
+
+::: {.callout-caution title="Nombre de variables (columnas) no acorde a estilo" collapse="true"}
+###### Nombre de variables (columnas) no acorde a estilo
+
+-   Correcto - Variables con nombre en formato CamelCase
+:::
+
+::: {.callout-caution title="Nombre de observaciones (filas) no acorde a estilo" collapse="true"}
+###### Nombre de observaciones (filas) no acorde a estilo
+
+-   No aplica - Las filas no tienen nombre
+:::
+:::
+
+::: {.callout-note title="2 - Datos incorrectos" collapse="true"}
+##### 2 - Datos incorrectos
+
+-   Correcto - No se detectan problemas con la corrección de los datos
+
+::: {.callout-caution title="Errores del subproceso de ingesta" collapse="true"}
+###### Errores del subproceso de ingesta
+
+-   Correcto - No se detectan problemas de ingesta
+:::
+
+::: {.callout-caution title="Datos desestructurados - Más de una variable por columna" collapse="true"}
+###### Datos desestructurados - Más de una variables por columna
+
+-   Correcto - Cada columna tiene una única variable
+:::
+
+::: {.callout-caution title="Datos desestructurados - Más de una observación por fila" collapse="true"}
+###### Datos desestructurados - Más de una observación por fila
+
+-   Correcto - Cada fila tiene una única observación
+:::
+:::
+
+::: {.callout-note title="3 - Datos irrelevantes" collapse="true"}
+##### 3 - Datos irrelevantes
+
+Se han detectado los siguientes problemas con datos irrelevantes:
+
+-   Existen variables con todos los datos faltantes
+-   Existen variables con todas las observaciones con el mismo valor
+-   Existen variables innecesarias para el análisis (columnas)
+-   Existen observaciones innecesarias para el análisis (filas)
+
+::: {.callout-caution title="Variables con todas las observaciones faltantes" collapse="true"}
+###### Variables con todas las observaciones faltantes
+
+· Incorrecto: Existen variables con todos los datos faltantes
+
+Se analizó el patrón de datos faltantes de los datos crudos con la función `mice::md.pattern()`
+
+```{r}
+#| code-fold: true
+
+mice::md.pattern(rawCdiAlcohol, plot = T, rotate.names = T)
+```
+
+Se observó que:
+
+-   Diez variables no tenían ningún valor en ninguna observación
+-   En tres de ellas había un elevado número de `NA`.
+-   El resto de variables no presentaba este problema
+:::
+
+::: {.callout-caution title="Variables con todas las observaciones con el mismo valor" collapse="true"}
+###### Variables con todas las observaciones con el mismo valor
+
+· Incorrecto: Existe al menos una variable con todas las observaciones con el mismo valor (`Topic`)
+:::
+
+::: {.callout-caution title="Variables innecesarias para el análisis (columnas)" collapse="true"}
+###### Variables innecesarias para el análisis (columnas)
+
+· Incorrecto: Varias variables tienen información innecesaria o redundante para el análisis
+
+Las siguientes variables del dataset original no son necesarias:
+
+| Variable                  | Justificación                                          |
+|---------------------------|--------------------------------------------------------|
+| `YearEnd`                 | Información redundante con `YearStart`                 |
+| `DataSource`              | Irrelevante para el análisis                           |
+| `DataValue`               | Información redundante con `DataValueAlt`              |
+| `DataValueFootnoteSymbol` | Irrelevante para el análisis                           |
+| `DatavalueFootnote`       | Irrelevante para el análisis                           |
+| `GeoLocation`             | Irrelevante para el análisis                           |
+| `LocationID`              | Irrelevante para el análisis                           |
+| `DataValueTypeID`         | Información redundante con `DataValueType`             |
+| `DataValueUnit`           | Irrelevante para el análisis                           |
+| `LocationDesc`            | Información redundante con `LocationAbbr`              |
+| `Question`                | Información redundante con `QuestionID`                |
+| `StratificationCategory1` | Información redundante con `StratificationCategoryID1` |
+| `Stratification1`         | Información redundante con `StratificationID1`         |
+:::
+
+::: {.callout-caution title="Observaciones innecesarias para el análisis (filas)" collapse="true"}
+###### Observaciones innecesarias para el análisis (filas)
+
+· Incorrecto: Sobran observaciones en el dataset para el análisis
+
+No son necesarias todas las observaciones del dataset para el análisis. Necesitamos únicamente los datos correspondientes al año con más cobertura de información para todos los estados
+:::
+:::
+
+::: {.callout-note title="4 - Datos incompletos" collapse="true"}
+##### 4 - Datos incompletos
+
+Se han detectado los siguientes problemas de incompletitud:
+
+-   Faltan datos para algunos de los estados de EEUU
+-   Faltan datos para algunos de los años; el año con una completitud similar para todos los estados es 2021
+
+::: {.callout-caution title="Cobertura incompleta de observaciones (filas)" collapse="true"}
+###### Cobertura incompleta de observaciones (filas)
+
+-   Incorrecto - Existen problemas de completitud de observaciones para algunos estados, y para algunos años
+
+```{r}
+#| output: false
+#| code-fold: true
+
+# Lista de estados de cada tabla
+listaEstadosMaestra <- levels(as.factor(rawFipsCodes$state))
+listaNombresMaestra <- levels(as.factor(rawFipsCodes$state_name))
+listaEstadosCdiAlcohol <- levels(as.factor(rawCdiAlcohol$LocationAbbr))
+listaEstadosCauseOfDeath <- levels(as.factor(rawUnderlyingCauseOfDeathAlcohol$State))
+
+# Estados sin datos en rawCdiAlcohol
+esEstadoMaestraConDatosCdi <- listaEstadosMaestra %in% listaEstadosCdiAlcohol
+esDatoCdiConEstadoMaestra <- listaEstadosCdiAlcohol %in% listaEstadosMaestra
+
+listaEstadosMaestraSinDatosCdi <- listaEstadosMaestra[!esEstadoMaestraConDatosCdi]
+listaEstadosDatosCdiSinEstadoMaestra <-
+  listaEstadosCdiAlcohol[!esDatoCdiConEstadoMaestra]
+
+# Estados sin datos en rawUnderlyingCauseOfDeathAlcohol
+esEstadoMaestraConDatoCauseOfDeath <- listaNombresMaestra %in% listaEstadosCauseOfDeath
+esDatoCauseOfDeathConEstadoMaestra <- listaEstadosCauseOfDeath %in% listaNombresMaestra
+
+listaEstadosMaestraSinDatosCauseOfDeath <-
+  listaNombresMaestra[!esEstadoMaestraConDatoCauseOfDeath]
+listaEstadosDatosCauseOfDeathSinEstadosMaestra <-
+  listaEstadosCauseOfDeath[!esDatoCauseOfDeathConEstadoMaestra]
+
+tmp <- rawCdiAlcohol |> 
+  dplyr::group_by(
+    YearStart,
+    LocationAbbr
+  ) |> 
+  dplyr::summarise(
+    n = dplyr::n()
+  ) 
+tmp$YearStart <- paste0('y', tmp$YearStart)
+tmp <- tmp |> 
+  tidyr::pivot_wider(names_from = YearStart, values_from = n)
+tmp <- dplyr::left_join(rawFipsCodes, tmp, by = dplyr::join_by(state == LocationAbbr)) |> 
+  dplyr::select(-state_code, -county, -county_code) |> 
+  unique()
+
+```
+
+| data.table                         | Variable     | Descripción                                          | Datos faltantes                                    |
+|------------------------------------|--------------|------------------------------------------------------|----------------------------------------------------|
+| `rawCdiAlcohol`                    | LocationAbbr | Datos CDI que no corresponden a un estado            | `r listaEstadosDatosCdiSinEstadoMaestra`           |
+| `rawFipsCodes`                     | state        | Estados sin datos en CDI                             | `r listaEstadosMaestraSinDatosCdi`                 |
+| `rawFipsCodes`                     | state        | Estados sin datos en Cause of Death                  | `r listaEstadosMaestraSinDatosCauseOfDeath`        |
+| `rawUnderlyingCauseOfDeathAlcohol` | State        | Datos Cause of Death que no corresponden a un estado | `r listaEstadosDatosCauseOfDeathSinEstadosMaestra` |
+
+```{r}
+#| code-fold: true
+kableExtra::kable(tmp)
+```
+:::
+
+::: {.callout-caution title="Cobertura incompleta de variables (columnas)" collapse="true"}
+###### Cobertura incompleta de variables (columnas)
+
+· Correcto - No faltan ninguna variable de interés
+:::
+
+::: {.callout-caution title="Cobertura incompleta de datos (`NA`)" collapse="true"}
+###### Cobertura incompleta de datos (`NA`)
+
+· Incorrecto - Existen datos faltantes
+
+Se analizó el patrón de datos faltantes de los datos crudos con la función `mice::md.pattern()`:
+
+```{r}
+#| code-fold: true
+
+mice::md.pattern(rawCdiAlcohol, plot = T, rotate.names = T)
+```
+:::
+
+::: {.callout-caution title="Cobertura incompleta de periodos (series temporales)" collapse="true"}
+###### Cobertura incompleta de periodos (series temporales)
+
+· No aplica en nuestro estudio
+
+```{r}
+
+```
+:::
+:::
+
+::: {.callout-note title="5 - Datos imprecisos" collapse="true"}
+##### 5 - Datos imprecisos
+
+Se han detectado los siguentes problemas de imprecisión de los datos:
+
+-   Tipado de variables incorrecto; deben retipificarse las variables tipo `character`
+
+::: {.callout-caution title="Tipado de variable incorrecto" collapse="true"}
+###### Tipado de variable incorrecto
+
+-   Incorrecto - Deben retipificarse las variables tipo `character`
+:::
+
+::: {.callout-caution title="Precisión decimal insuficiente" collapse="true"}
+###### Precisión decimal insuficiente
+
+-   Correcto - No se han detectado problemas de precisión en números
+:::
+
+::: {.callout-caution title="Cardinalidad inadecuada (demasiadas o insuficientes categorías)" collapse="true"}
+###### Cardinalidad inadecuada (demasiadas o insuficientes categorías)
+
+-   Correcto - No se han detectado problemas de cardinalidad
+:::
+
+::: {.callout-caution title="Datos impuntuales *(punctuality)* (series temporales)" collapse="true"}
+###### Datos impuntuales *(punctuality)* (series temporales)
+
+-   No aplica (análisis de series temporales)
+:::
+
+::: {.callout-caution title="Datos desactualizados *(freshness)* (series temporales)" collapse="true"}
+###### Datos desactualizados *(freshness)* (series temporales)
+
+-   Correcto - Datos suficientemente actualizados para el propósito del estudio
+:::
+:::
+
+::: {.callout-note title="6 - Datos incómodos" collapse="true"}
+##### 6 - Datos incómodos
+
+-   Correcto - No se han detectado problemas
+
+::: {.callout-caution title="Formato inadecuado para el análisis (largo / ancho)" collapse="true"}
+###### Formato inadecuado para el análisis (largo / ancho)
+
+-   Correcto - No se han detectado problemas
+:::
+
+::: {.callout-caution title="Orden incorrecto de variables (columnas)" collapse="true"}
+###### Orden incorrecto de variables (columnas)
+
+-   Correcto - No se han detectado problemas
+:::
+
+::: {.callout-caution title="Orden incorrecto de observaciones (filas)" collapse="true"}
+###### Orden incorrecto de observaciones (filas)
+
+-   Correcto - No se han detectado problemas
+:::
+:::
+
+##### Resumen del resultado de la validación
+
+| Problema del dato | Subtipo de problema                                             |        Valoración del *dataset*        |            Acción correctiva            |
+|-------------------|-----------------------------------------------------------------|:--------------------------------------:|:---------------------------------------:|
+| Sucio             | Codificación de caracteres incorrecta                           |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Símbolos innecesarios (\$, €, %, ... )                          |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Nombre de *data.frame* no acorde a estilo                       |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Nombre de variables (columnas) no acorde a estilo               |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Nombre de observaciones (filas) no acorde a estilo              | [*NO APLICA*]{style="color:darkgray;"} |                                         |
+| Incorrecto        | Errores del subproceso de ingesta                               |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Datos no ordenados - Más de una variable por columna            |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Datos no ordenados - Más de una observación por fila            |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Datos no ordenados - Más de un dato por registro                |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+| Irrelevante       | Variables con todas las observaciones faltantes                 |  [INCORRECTO]{style="color:darkred;"}  |        Eliminación de variables         |
+|                   | Variables con todas las observaciones con el mismo valor        |  [INCORRECTO]{style="color:darkred;"}  |        Eliminación de variables         |
+|                   | Variables innecesarias para el análisis (columnas)              |  [INCORRECTO]{style="color:darkred;"}  |        Eliminación de variables         |
+|                   | Observaciones innecesarias para el análisis (filas)             |  [INCORRECTO]{style="color:darkred;"}  |       Agrupación de observaciones       |
+| Incompleto        | Cobertura incompleta de observaciones (filas)                   |  [INCORRECTO]{style="color:darkred;"}  | Selección de año 2021 (mejor cobertura) |
+|                   | Cobertura incompleta de variables (columnas)                    |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Cobertura incompleta de datos (`NA`)                            |  [INCORRECTO]{style="color:darkred;"}  |     Análisis de variables completas     |
+|                   | Cobertura incompleta de periodos (series temporales)            |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+| Impreciso         | Tipado de variable incorrecto                                   |  [INCORRECTO]{style="color:darkred;"}  |          Retipado de variables          |
+|                   | Precisión decimal insuficiente                                  |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Cardinalidad inadecuada (demasiadas o insuficientes categorías) |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Datos impuntuales *(punctuality)* (series temporales)           | [*NO APLICA*]{style="color:darkgray;"} |                                         |
+|                   | Datos desactualizados *(freshness)* (series temporales)         |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+| Incómodo          | Formato inadecuado para el análisis (largo / ancho)             |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Orden incorrecto de variables (columnas)                        |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+|                   | Orden incorrecto de observaciones (filas)                       |  [CORRECTO]{style="color:darkgreen;"}  |                                         |
+
+#### Validación de `rawUnderlyingCauseOfDeathAlcohol`
+
+::: {.callout-note title="1- Información sucia" collapse="true"}
+##### 1- Información sucia
+
+Se han detectado los siguientes problemas de suciedad de los datos:
+
+-   Variable `% of Total Death` con valores seguidos del símbolo `%`
+-   Variables con nombre no normalizado
+
+::: {.callout-caution title="Codificación de caracteres incorrecta" collapse="true"}
+###### Codificación de caracteres incorrecta
+
+-   Correcto:
+    -   Los datasets se han ingestado en la codificación estándar **UTF-8**
+    -   No se han registrado advertencias durante la ingesta
+    -   La apariencia de los datos ingestados es correcta
+:::
+
+::: {.callout-caution title="Símbolos innecesarios ($, €, %, ... )" collapse="true"}
+###### Símbolos innecesarios (\$, €, %, ... )
+
+-   Incorrecto - Variable `% of Total Death` con valores seguidos del símbolo `%`
+:::
+
+::: {.callout-caution title="Nombre de *data.frame* no acorde a estilo" collapse="true"}
+###### Nombre de *data.frame* no acorde a estilo
+
+-   Correcto - Nombre del **data.frame** en formato CamelCase
+:::
+
+::: {.callout-caution title="Nombre de variables (columnas) no acorde a estilo" collapse="true"}
+###### Nombre de variables (columnas) no acorde a estilo
+
+-   Incorrecto - Variables con nombre no normalizado
+:::
+
+::: {.callout-caution title="Nombre de observaciones (filas) no acorde a estilo" collapse="true"}
+###### Nombre de observaciones (filas) no acorde a estilo
+
+-   No aplica - Las filas no tienen nombre normalizado
+:::
+:::
+
+::: {.callout-note title="2 - Datos incorrectos" collapse="true"}
+##### 2 - Datos incorrectos
+
+· Correcto - No se han identificado problemas de incorrección de datos
+
+::: {.callout-caution title="Errores del subproceso de ingesta" collapse="true"}
+###### Errores del subproceso de ingesta
+
+· Correcto - No se han detectado problemas de ingesta
+:::
+
+::: {.callout-caution title="Datos desestructurados - Más de una variable por columna" collapse="true"}
+###### Datos desestructurados - Más de una variables por columna
+
+· Correcto - Cada variable está en una columna
+:::
+
+::: {.callout-caution title="Datos desestructurados - Más de una observación por fila" collapse="true"}
+###### Datos desestructurados - Más de una observación por fila
+
+· Correcto - Cada observación está en una fila
+:::
+:::
+
+::: {.callout-note title="3 - Datos irrelevantes" collapse="true"}
+##### 3 - Datos irrelevantes
+
+Se han identificado los siguientes valores irrelevantes:
+
+-   Deben eliminarse varias variables innecesarias para el análisis
+
+::: {.callout-caution title="Variables con todas las observaciones faltantes" collapse="true"}
+###### Variables con todas las observaciones faltantes
+
+-   Correcto - No se han identificado variables con todas las observaciones faltantes
+:::
+
+::: {.callout-caution title="Variables con todas las observaciones con el mismo valor" collapse="true"}
+###### Variables con todas las observaciones con el mismo valor
+
+-   Correcto - No se han identificado variables con todas las observaciones con el mismo valor
+:::
+
+::: {.callout-caution title="Observaciones innecesarias para el análisis (filas)" collapse="true"}
+###### Observaciones innecesarias para el análisis (filas)
+
+· Incorrecto: deben eliminarse las observaciones con el valor 'Total' en la variable `Notes`, los valores redundantes de la variable `Stratification1` y conservarse únicamente las observaciones del año '2021'
+:::
+
+::: {.callout-caution title="Variables innecesarias para el análisis (columnas)" collapse="true"}
+###### Variables innecesarias para el análisis (columnas)
+
+· Incorrecto: Varias variables tienen información innecesaria o redundante para el análisis
+
+Las siguientes variables del dataset original no son necesarias:
+
+| Variable                                          | Justificación                                                 |
+|---------------------------------------------------|---------------------------------------------------------------|
+| `Notes`                                           | Irrelevante para el análisis                                  |
+| `State Code`                                      | Información redundante con `State`                            |
+| `Year`                                            | Información redundante con `Year Code`                        |
+| `Crude Rate`                                      | Irrelevante para el análisis                                  |
+| `Crude Rate Lower 95% Confidence Interval`        | Irrelevante para el análisis                                  |
+| `Crude Rate Upper 95% Confidence Interval`        | Irrelevante para el análisis                                  |
+| `Crude Rate Standard Error`                       | Irrelevante para el análisis                                  |
+| `Age Adjusted Rate Lower 95% Confidence Interval` | Información redundante con `Age Adjusted Rate Standard Error` |
+| `Age Adjusted Rate Upper 95% Confidence Interval` | Información redundante con `Age Adjusted Rate Standard Error` |
+:::
+:::
+
+::: {.callout-note title="4 - Datos incompletos" collapse="true"}
+##### 4 - Datos incompletos
+
+· Correcto - No se han detectado problemas
+
+::: {.callout-caution title="Cobertura incompleta de observaciones (filas)" collapse="true"}
+###### Cobertura incompleta de observaciones (filas)
+
+· Correcto - Todos los estados tienen datos en el dataset para el año seleccionado
+:::
+
+::: {.callout-caution title="Cobertura incompleta de variables (columnas)" collapse="true"}
+###### Cobertura incompleta de variables (columnas)
+
+· Correcto - Están disponibles todas las variables necesarias
+:::
+
+::: {.callout-caution title="Cobertura incompleta de datos (`NA`)" collapse="true"}
+###### Cobertura incompleta de datos (`NA`)
+
+· Correcto - No existen problemas de datos faltantes. Los únicos `NA` están asociados a las filas de totales
+
+```{r}
+#| code-fold: true
+
+mice::md.pattern(rawUnderlyingCauseOfDeathAlcohol, plot = T, rotate.names = T)
+```
+:::
+
+::: {.callout-caution title="Cobertura incompleta de periodos (series temporales)" collapse="true"}
+###### Cobertura incompleta de periodos (series temporales)
+
+· No aplica
+:::
+:::
+
+::: {.callout-note title="5 - Datos imprecisos" collapse="true"}
+##### 5 - Datos imprecisos
+
+Se han detectado los siguientes problemas de imprecisión:
+
+-   Se debe cambiar el tipado de las variables tipo `character`
+
+::: {.callout-caution title="Tipado de variable incorrecto" collapse="true"}
+###### Tipado de variable incorrecto
+
+· Incorrecto - Se debe cambiar el tipado de las variables tipo `character`
+:::
+
+::: {.callout-caution title="Precisión decimal insuficiente" collapse="true"}
+###### Precisión decimal insuficiente
+
+· Correcto - No se detectan problemas
+:::
+
+::: {.callout-caution title="Cardinalidad inadecuada (demasiadas o insuficientes categorías)" collapse="true"}
+###### Cardinalidad inadecuada (demasiadas o insuficientes categorías)
+
+· Correcto - No se detectan problemas
+:::
+
+::: {.callout-caution title="Datos impuntuales *(punctuality)* (series temporales)" collapse="true"}
+###### Datos impuntuales *(punctuality)* (series temporales)
+
+· No aplica
+:::
+
+::: {.callout-caution title="Datos desactualizados *(freshness)* (series temporales)" collapse="true"}
+###### Datos desactualizados *(freshness)* (series temporales)
+
+· No aplica
+:::
+:::
+
+::: {.callout-note title="6 - Datos incómodos" collapse="true"}
+##### 6 - Datos incómodos
+
+::: {.callout-caution title="Formato inadecuado para el análisis (largo / ancho)" collapse="true"}
+###### Formato inadecuado para el análisis (largo / ancho)
+
+· Correcto - No se detectan problemas
+:::
+
+::: {.callout-caution title="Orden incorrecto de variables (columnas)" collapse="true"}
+###### Orden incorrecto de variables (columnas)
+
+· Correcto - No se detectan problemas
+:::
+
+::: {.callout-caution title="Orden incorrecto de observaciones (filas)" collapse="true"}
+###### Orden incorrecto de observaciones (filas)
+
+· Correcto - No se detectan problemas
+:::
+:::
+
+##### Resumen del resultado de la validación
+
+| Problema del dato | Subtipo de problema                                             | Problemas del *dataset*                | Acción                     |
+|-------------------|-----------------------------------------------------------------|----------------------------------------|----------------------------|
+| Sucio             | Codificación de caracteres incorrecta                           | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Símbolos innecesarios (\$, €, %, ... )                          | [INCORRECTO]{style="color:darkred;"}   | Transformación de variable |
+|                   | Nombre de *data.frame* no acorde a estilo                       | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Nombre de variables (columnas) no acorde a estilo               | [INCORRECTO]{style="color:darkred;"}   | Renombrado de variables    |
+|                   | Nombre de observaciones (filas) no acorde a estilo              | [*NO APLICA*]{style="color:darkgray;"} |                            |
+| Incorrecto        | Errores del subproceso de ingesta                               | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Datos no ordenados - Más de una variables por columna           | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Datos no ordenados - Más de una observación por fila            | [CORRECTO]{style="color:darkgreen;"}   |                            |
+| Irrelevante       | Variables con todas las observaciones faltantes                 | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Variables con todas las observaciones con el mismo valor        | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Observaciones innecesarias para el análisis (filas)             | [INCORRECTO]{style="color:darkred;"}   | Filtrado de observaciones  |
+|                   | Variables innecesarias para el análisis (columnas)              | [INCORRECTO]{style="color:darkred;"}   | Eliminación de variables   |
+| Incompleto        | Cobertura incompleta de observaciones (filas)                   | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Cobertura incompleta de variables (columnas)                    | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Cobertura incompleta de datos (`NA`)                            | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Cobertura incompleta de periodos (series temporales)            | [CORRECTO]{style="color:darkgreen;"}   |                            |
+| Impreciso         | Tipado de variable incorrecto                                   | [INCORRECTO]{style="color:darkred;"}   | Retipado de variables      |
+|                   | Precisión decimal insuficiente                                  | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Cardinalidad inadecuada (demasiadas o insuficientes categorías) | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Datos impuntuales *(punctuality)* (series temporales)           | [*NO APLICA*]{style="color:darkgray;"} |                            |
+|                   | Datos desactualizados *(freshness)* (series temporales)         | [*NO APLICA*]{style="color:darkgray;"} |                            |
+| Incómodo          | Formato inadecuado para el análisis (largo / ancho)             | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Orden incorrecto de variables (columnas)                        | [CORRECTO]{style="color:darkgreen;"}   |                            |
+|                   | Orden incorrecto de observaciones (filas)                       | [CORRECTO]{style="color:darkgreen;"}   |                            |
+
+#### Validación de `rawFipsCodes`
+
+::: {.callout-note title="1- Información sucia" collapse="true"}
+##### 1- Información sucia
+
+Se han encontrado los siguientes problemas con la suciedad de los datos:
+
+-   Variables con nombre en formato snake_case
+
+::: {.callout-caution title="Codificación de caracteres incorrecta" collapse="true"}
+###### Codificación de caracteres incorrecta
+
+-   Correcto:
+
+-   Los datasets se han ingestado en la codificación estándar **UTF-8**
+
+-   No se han registrado advertencias durante la ingesta
+
+-   La apariencia de los datos ingestados es correcta
+:::
+
+::: {.callout-caution title="Símbolos innecesarios ($, €, %, ... )" collapse="true"}
+###### Símbolos innecesarios (\$, €, %, ... )
+
+-   Correcto - Sin problemas en ninguna de las variables
+:::
+
+::: {.callout-caution title="Nombre de *data.frame* no acorde a estilo" collapse="true"}
+###### Nombre de *data.frame* no acorde a estilo
+
+-   Correcto - Nombre del **data.frame** en formato CamelCase
+:::
+
+::: {.callout-caution title="Nombre de variables (columnas) no acorde a estilo" collapse="true"}
+###### Nombre de variables (columnas) no acorde a estilo
+
+-   Incorrecto - Variables con nombre en formato snake_case
+:::
+
+::: {.callout-caution title="Nombre de observaciones (filas) no acorde a estilo" collapse="true"}
+###### Nombre de observaciones (filas) no acorde a estilo
+
+-   No aplica - Las filas no tienen nombre
+:::
+:::
+
+::: {.callout-note title="2 - Datos incorrectos" collapse="true"}
+##### 2 - Datos incorrectos
+
+· Correcto - No se han detectado problemas de incorrección de datos
+
+::: {.callout-caution title="Errores del subproceso de ingesta" collapse="true"}
+###### Errores del subproceso de ingesta
+
+· Correcto - No se han detectado problemas de ingesta
+:::
+
+::: {.callout-caution title="Datos desestructurados - Más de una variable por columna" collapse="true"}
+###### Datos desestructurados - Más de una variables por columna
+
+· Correcto - Una variable por columna
+:::
+
+::: {.callout-caution title="Datos desestructurados - Más de una observación por fila" collapse="true"}
+###### Datos desestructurados - Más de una observación por fila
+
+· Correcto - Una observación por fila
+:::
+:::
+
+::: {.callout-note title="3 - Datos irrelevantes" collapse="true"}
+##### 3 - Datos irrelevantes
+
+· Correcto - No se han identificado problemas de irrelevancia de datos
+
+::: {.callout-caution title="Variables con todas las observaciones faltantes" collapse="true"}
+###### Variables con todas las observaciones faltantes
+
+· Correcto - No hay problemas de datos faltantes
+:::
+
+::: {.callout-caution title="Variables con todas las observaciones con el mismo valor" collapse="true"}
+###### Variables con todas las observaciones con el mismo valor
+
+· Correcto - No hay variables con todas las observaciones iguales
+:::
+
+::: {.callout-caution title="Variables innecesarias para el análisis (columnas)" collapse="true"}
+###### Variables innecesarias para el análisis (columnas)
+
+· Incorrecto: Varias variables tienen información innecesaria o redundante para el análisis
+
+Las siguientes variables del dataset original no son necesarias:
+
+| Variable      | Justificación                |
+|---------------|------------------------------|
+| `county_code` | Irrelevante para el análisis |
+| `county`      | Irrelevante para el análisis |
+:::
+
+::: {.callout-caution title="Observaciones innecesarias para el análisis (filas)" collapse="true"}
+###### Observaciones innecesarias para el análisis (filas)
+:::
+:::
+
+::: {.callout-note title="4 - Datos incompletos" collapse="true"}
+##### 4 - Datos incompletos
+
+::: {.callout-caution title="Cobertura incompleta de observaciones (filas)" collapse="true"}
+###### Cobertura incompleta de observaciones (filas)
+:::
+
+::: {.callout-caution title="Cobertura incompleta de variables (columnas)" collapse="true"}
+###### Cobertura incompleta de variables (columnas)
+:::
+
+::: {.callout-caution title="Cobertura incompleta de datos (`NA`)" collapse="true"}
+###### Cobertura incompleta de datos (`NA`)
+:::
+
+::: {.callout-caution title="Cobertura incompleta de periodos (series temporales)" collapse="true"}
+###### Cobertura incompleta de periodos (series temporales)
+:::
+:::
+
+::: {.callout-note title="5 - Datos imprecisos" collapse="true"}
+##### 5 - Datos imprecisos
+
+::: {.callout-caution title="Tipado de variable incorrecto" collapse="true"}
+###### Tipado de variable incorrecto
+:::
+
+::: {.callout-caution title="Precisión decimal insuficiente" collapse="true"}
+###### Precisión decimal insuficiente
+:::
+
+::: {.callout-caution title="Cardinalidad inadecuada (demasiadas o insuficientes categorías)" collapse="true"}
+###### Cardinalidad inadecuada (demasiadas o insuficientes categorías)
+:::
+
+::: {.callout-caution title="Datos impuntuales *(punctuality)* (series temporales)" collapse="true"}
+###### Datos impuntuales *(punctuality)* (series temporales)
+:::
+
+::: {.callout-caution title="Datos desactualizados *(freshness)* (series temporales)" collapse="true"}
+###### Datos desactualizados *(freshness)* (series temporales)
+:::
+:::
+
+::: {.callout-note title="6 - Datos incómodos" collapse="true"}
+##### 6 - Datos incómodos
+
+::: {.callout-caution title="Formato inadecuado para el análisis (largo / ancho)" collapse="true"}
+###### Formato inadecuado para el análisis (largo / ancho)
+:::
+
+::: {.callout-caution title="Orden incorrecto de variables (columnas)" collapse="true"}
+###### Orden incorrecto de variables (columnas)
+:::
+
+::: {.callout-caution title="Orden incorrecto de observaciones (filas)" collapse="true"}
+###### Orden incorrecto de observaciones (filas)
+:::
+:::
+
+##### Resumen del resultado de la validación
+
+| Problema del dato | Subtipo de problema                                             | Problemas del *dataset*                | Acción                   |
+|-------------------|-----------------------------------------------------------------|----------------------------------------|--------------------------|
+| Sucio             | Codificación de caracteres incorrecta                           | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Símbolos innecesarios (\$, €, %, ... )                          | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Nombre de *data.frame* no acorde a estilo                       | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Nombre de variables (columnas) no acorde a estilo               | [INCORRECTO]{style="color:darkred;"}   | Renombrado de variables  |
+|                   | Nombre de observaciones (filas) no acorde a estilo              | [*NO APLICA*]{style="color:darkgray;"} |                          |
+| Incorrecto        | Errores del subproceso de ingesta                               | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Datos no ordenados - Más de una variables por columna           | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Datos no ordenados - Más de una observación por fila            | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Datos no ordenados - Más de un dato por registro                | [CORRECTO]{style="color:darkgreen;"}   |                          |
+| Irrelevante       | Variables con todas las observaciones faltantes                 | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Variables con todas las observaciones con el mismo valor        | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Variables innecesarias para el análisis (columnas)              | [INCORRECTO]{style="color:darkred;"}   | Eliminación de variables |
+|                   | Observaciones innecesarias para el análisis (filas)             | [CORRECTO]{style="color:darkgreen;"}   |                          |
+| Incompleto        | Cobertura incompleta de observaciones (filas)                   | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Cobertura incompleta de variables (columnas)                    | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Cobertura incompleta de datos (`NA`)                            | [*NO APLICA*]{style="color:darkgray;"} |                          |
+|                   | Cobertura incompleta de periodos (series temporales)            | [CORRECTO]{style="color:darkgreen;"}   |                          |
+| Impreciso         | Tipado de variable incorrecto                                   | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Precisión decimal insuficiente                                  | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Cardinalidad inadecuada (demasiadas o insuficientes categorías) | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Datos impuntuales *(punctuality)* (series temporales)           | [*NO APLICA*]{style="color:darkgray;"} |                          |
+|                   | Datos desactualizados *(freshness)* (series temporales)         | [*NO APLICA*]{style="color:darkgray;"} |                          |
+| Incómodo          | Formato inadecuado para el análisis (largo / ancho)             | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Orden incorrecto de variables (columnas)                        | [CORRECTO]{style="color:darkgreen;"}   |                          |
+|                   | Orden incorrecto de observaciones (filas)                       | [CORRECTO]{style="color:darkgreen;"}   |                          |
+
+### 02b - Reingestar, modificar, reemplazar o borrar esta información no deseada de acuerdo a la necesidad
+
+```{r}
+#| code-fold: true
+#| output: false
+# Creación de los data.frame temporal para la limpieza
+tmpCdiAlcohol <- rawCdiAlcohol
+tmpUnderlyingCauseOfDeathAlcohol <- rawUnderlyingCauseOfDeathAlcohol
+tmpFipsCodes <- rawFipsCodes
+```
+
+#### 1- Limpieza de `rawCdiAlcohol`
+
+::: {.callout-note title="1a - Eliminación de datos irrelevantes" collapse="true"}
+##### 1a - Eliminación de datos irrelevantes
+
+Se realizaron las siguientes acciones para corregir los datos irrelevantes:
+
+-   1aa - Eliminación de variables sin datos
+-   1ab - Eliminación de variables con todas las observaciones con el mismo valor
+-   1ac - Eliminación de variables innecesarias
+-   1ad - Eliminación de observaciones innecesarias
+-   1ae - Limpieza final
+
+::: {.callout-caution title="1a1 - Eliminación de variables sin datos" collapse="true"}
+###### 1aa - Eliminación de variables sin datos
+
+Se analizó el patrón de datos faltantes de los datos crudos con la función `mice::md.pattern()`:
+
+```{r}
+#| code-fold: true
+#| output: false
+
+mice::md.pattern(tmpCdiAlcohol, plot = T, rotate.names = T)
+```
+
+Se observó que:
+
+-   Diez variables no tenían ningún valor en ninguna observación
+-   En tres de ellas había un elevado número de `NA`.
+-   El resto de variables no presentaba problemas de valores faltantes
+
+Para identificar las variables sin datos, se utilizó el siguiente procedimiento:
+
+-   Paso 1 - Valoración del número total de datos faltantes de cada variable (`NA`)
+-   Paso 2 - Identificación de las variables cuyo número total de `NA` sea igual al número de observaciones (filas) del dataset
+-   Paso 3 - Eliminación de las variables sin datos
+
+```{r}
+#| code-fold: true
+#| output: false
+
+## Identificación de variables sin ningún dato
+### Paso 1 - Valoración del número total de datos faltantes de cada variable (`NA`)
+nMissingDataByCol <- colSums(is.na(tmpCdiAlcohol))
+
+### Paso 2 - Identificación de las variables cuyo número total de `NA` sea igual al número de observaciones (filas) del dataset
+namesVarNoData <- 
+  names(nMissingDataByCol)[nMissingDataByCol == nrow(tmpCdiAlcohol)]
+idxVarNoData <- names(tmpCdiAlcohol) %in% namesVarNoData
+namesVarData <- names(tmpCdiAlcohol)[!idxVarNoData]
+
+### Paso 3 - Eliminación de las variables sin datos
+tmpCdiAlcohol <- tmpCdiAlcohol |> 
+  dplyr::select(
+    dplyr::all_of(namesVarData)
+  )
+
+mice::md.pattern(tmpCdiAlcohol, plot = T, rotate.names = T)
+```
+:::
+
+::: {.callout-caution title="1ab - Eliminación de variables con todas las observaciones con el mismo valor" collapse="true"}
+###### 1ab - Eliminación de variables con todas las observaciones con el mismo valor
+
+Para eliminar las variables con todas las observaciones iguales, se utilizó el siguiente procedimiento:
+
+-   Para las variables categóricas:
+    -   Paso 1 - Identificar las variables de tipo `character`
+    -   Paso 2 - Evaluar la cardinalidad (número de categorías) de cada variable
+    -   Paso 3 - Eliminar las variables con cardinalidad de 1
+
+```{r}
+#| code-fold: true
+#| output: false
+
+# Eliminación de variables con todas las observaciones con el mismo valor
+## Paso 1 - Identificar las variables de tipo `character`
+### Tipo de variables del dataframe
+sapply(tmpCdiAlcohol, class)
+### Número de tipos de variable en el dataframe
+table(sapply(tmpCdiAlcohol, class))
+### Variables de tipo character
+varCharacterNames <- names(which(sapply(tmpCdiAlcohol, is.character)))
+isCharacter <- names(tmpCdiAlcohol) %in% varCharacterNames
+
+## Paso 2 - Evaluar la cardinalidad (número de categorías) de cada variable
+### Función para calcular la cardinalidad de una variable
+cardinality <- function(x){length(levels(as.factor(x)))}
+
+### Cardinalidad de las variables categóricas
+cardinalityCdiAlcohol <- tmpCdiAlcohol |> 
+  dplyr::select(
+    dplyr::all_of(varCharacterNames)
+  ) |> 
+  sapply(cardinality)
+
+## Paso 3 - Eliminar las variables con cardinalidad de 1
+### Variables categóricas con cardinalidad de 0 (sin valores) o 1 (con todos iguales)
+esVarCardinalidadBaja <- cardinalityCdiAlcohol %in% c(0,1)
+namesVarCardinalidadNormal <- names(tmpCdiAlcohol)[!esVarCardinalidadBaja]
+tmpCdiAlcohol <- tmpCdiAlcohol |> 
+  dplyr::select(
+    dplyr::all_of(namesVarCardinalidadNormal)
+    )
+```
+:::
+
+::: {.callout-caution title="1ac - Eliminación de variables innecesarias para el análisis" collapse="true"}
+###### 1ac - Eliminación de variables innecesarias para el análisis
+
+Se eliminaron las siguientes variables del dataset original:
+
+| Variable                                         | Justificación                              |
+|--------------------------------------------------|--------------------------------------------|
+| `YearEnd`                                        | Información redundante con `YearStart`     |
+| `DataSource`                                     | Irrelevante para el análisis               |
+| `DataValue`                                      | Información redundante con `DataValueAlt`  |
+| `DataValueFootnoteSymbol`<br>`DatavalueFootnote` | Irrelevante para el análisis               |
+| `GeoLocation`                                    | Irrelevante para el análisis               |
+| `LocationID`                                     | Irrelevante para el análisis               |
+| `DataValueTypeID`                                | Información redundante con `DataValueType` |
+| `DataValueUnit`                                  | Irrelevante para el análisis               |
+
+A pesar de que tenían información idéntica, se mantuvieron en el dataset las siguientes variables, para facilitar el etiquetado de gráficos con etiquetas cortas:
+
+| Variable A (descripción larga) | Variable B (etiqueta corta) |
+|--------------------------------|-----------------------------|
+| `LocationDesc`                 | `LocationAbbr`              |
+| `Question`                     | `QuestionID`                |
+| `StratificationCategory1`      | `StratificationCategoryID1` |
+| `Stratification1`              | `StratificationID1`         |
+
+```{r}
+#| code-fold: true
+#| output: false
+
+# Variables a mantener en el dataset
+varCdiAlcohol <- c(
+  "YearStart",
+  #"YearEnd",
+  "LocationAbbr",
+  #"DataSource",
+  "Question",
+  "DataValueType",
+  "DataValueAlt",
+  #"DataValueUnit",
+  #"DataValue",
+  #"DataValueFootnoteSymbol",
+  #"DatavalueFootnote",
+  #"LowConfidenceLimit",
+  #"HighConfidenceLimit",
+  "StratificationCategory1",
+  "Stratification1"# ,
+  #"StratificationID1"
+  #"GeoLocation",
+  #"LocationID",
+  # "DataValueTypeID",
+)
+# Selección de variables relevantes
+tmpCdiAlcohol <- tmpCdiAlcohol |> 
+  dplyr::select(
+    dplyr::all_of(varCdiAlcohol)
+    )
+
+```
+:::
+
+::: {.callout-caution title="1ad - Eliminación de observaciones innecesarias para el análisis (filas)" collapse="true"}
+###### 1ad - Eliminación de observaciones innecesarias para el análisis (filas)
+
+Se filtraron las siguientes observaciones del dataset original:
+
+| Variable                | Filtro aplicado                                    | Justificación                                                                                                                    |
+|-------------------------|----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| StratificationCategory1 | `%in% c("Gender", "Overall")`                      | La estratificación 'Race/Ethnicity' no tiene datos para un número significativo de estados                                       |
+| DataValueTypeID         | `%in% c("AGEADJMEAN", "AGEADJPREV", "AGEADJRATE")` | Las tasas ajustadas por edad son más adecuadas para comparar indicadores entre poblaciones con pirámides de población diferentes |
+| YearStart               | `== 2021`                                          | Año con datos más recientes, y con una mayor completitud de datos para todos los estados                                         |
+| LocationAbbr            | `!= "US"`                                          | Datos correspondientes al país completo                                                                                          |
+|                         |                                                    |                                                                                                                                  |
+
+Al revisar el patrón de datos faltantes de los resultados, se comprobó que:
+
+-   El estado de Florida tenía una tasa de datos faltantes muy superior al de restos de estados, para todos los indicadores
+-   La estratificación 'Race/Ethnicity' no tiene datos para un número significativo de estados
+-   Los niveles de 'Race' son redundantes (Male, Female, Overall)
+
+```{r}
+#| code-fold: true
+#| output: false
+
+# Datos faltantes por estado
+tmpCdiAlcohol[is.na(tmpCdiAlcohol$LocationAbbr),] |>
+  dplyr::group_by(LocationAbbr) |> 
+  dplyr::summarise(n = dplyr::n())
+
+# Datos faltantes por tipo de estratificación
+tmpCdiAlcohol[is.na(tmpCdiAlcohol$DataValueAlt),] |>
+  dplyr::group_by(StratificationCategory1) |> 
+  dplyr::summarise(n = dplyr::n())
+```
+
+Por este motivo,
+
+-   Se eliminaron los datos de la estratificación por raza y etnia
+
+```{r}
+#| code-fold: true
+#| output: false
+
+tmpCdiAlcohol_overall <- tmpCdiAlcohol |> 
+  dplyr::filter(
+    Stratification1 == 'Overall'
+  ) |> 
+  dplyr::select(
+    -StratificationCategory1,
+    -Stratification1
+  )
+
+tmpCdiAlcohol_byGender <- tmpCdiAlcohol |> 
+  dplyr::filter(
+    Stratification1 != 'Overall'
+  ) |> 
+  dplyr::select(
+    -StratificationCategory1
+  )
+
+tmpCdiAlcohol <- tmpCdiAlcohol |> 
+  dplyr::filter(
+    StratificationCategory1 %in% c("Gender", "Overall"),
+    DataValueType %in% c("Age-adjusted Mean", "Age-adjusted Prevalence", "Age-adjusted Rate" ),
+    YearStart == 2021, 
+    LocationAbbr != "US",
+    # Stratification1 != "Overall"
+  )
+
+```
+
+```{r}
+#| code-fold: true
+#| output: false
+
+tmpCdiAlcohol <- tmpCdiAlcohol |> 
+  dplyr::filter(
+    StratificationCategory1 %in% c("Gender", "Overall"),
+    DataValueType %in% c("Age-adjusted Mean", "Age-adjusted Prevalence", "Age-adjusted Rate" ),
+    LocationAbbr != "FL",
+    YearStart == 2021
+  )
+mice::md.pattern(tmpCdiAlcohol, plot = T, rotate.names = T)
+```
+
+Tras estas transformaciones, sólo un estado del dataset final queda sin datos (Florida), lo que se tendrá en cuenta al interpretar el análisis.
+
+```{r}
+#| code-fold: true
+tmpCdiAlcohol[is.na(tmpCdiAlcohol$DataValueAlt),]
+```
+:::
+
+::: {.callout-caution title="1ae - Limpieza final" collapse="true"}
+###### 1ae - Limpieza final
+
+Una vez eliminados los datos, innecesarios, algunas variables se vuelven superfluas:
+
+| Variables eliminadas | Transformación                           |
+|----------------------|------------------------------------------|
+| `DataValueType`      | Información Innecesaria para el análisis |
+
+```{r}
+#| code-fold: true
+#| output: false
+
+tmpCdiAlcohol <- tmpCdiAlcohol |> 
+  dplyr::select(
+    #-StratificationCategory1,
+    #-StratificationCategoryID1,
+    -DataValueType
+    )
+```
+:::
+:::
+
+::: {.callout-note title="1b - Retipado de variables" collapse="true"}
+##### 1b - Retipado de variables
+
+Se pospuso la tarea hasta la fusión de datasets de trabajo.
+:::
+
+#### 2 - Limpieza de `rawUnderlyingCauseOfDeathAlcohol`
+
+::: {.callout-note title="2a - Limpieza de datos sucios" collapse="true"}
+##### 2a - Limpieza de datos sucios
+
+Se realizaron las siguientes acciones para corregir los datos sucios:
+
+-   2aa - Transformación de la variable `% of Total Death`
+-   2ab - Renombrado de variables
+
+::: {.callout-caution title="2aa - Transformación de la variable `% of Total Death`" collapse="true"}
+###### 2aa - Transformación de la variable `% of Total Death`
+
+```{r}
+#| code-fold: true
+#| output: false
+
+## 2aa - Transformación de la variable `% of Total Death`
+tmpUnderlyingCauseOfDeathAlcohol$`% of Total Deaths` <- gsub(
+  pattern = "%",
+  replacement = "",
+  tmpUnderlyingCauseOfDeathAlcohol$`% of Total Deaths`
+) |> 
+  as.numeric()
+```
+:::
+
+::: {.callout-caution title="2ab - Renombrado de variables" collapse="true"}
+###### 2ab - Renombrado de variables
+
+```{r}
+#| code-fold: true
+#| output: false
+
+# Nombres originales
+rawNamesUnderlyingCauseOfDeath <- names(tmpUnderlyingCauseOfDeathAlcohol)
+
+# Nombres normalizados
+names(tmpUnderlyingCauseOfDeathAlcohol) <- c(
+  "Notes",
+  "State",
+  "StateCode",
+  "Year",
+  "YearCode",
+  "Gender",
+  "GenderCode",
+  "Deaths",
+  "Population",
+  "CrudeRate",
+  "CrudeRateLower95ConfidenceInterval",
+  "CrudeRateUpper95ConfidenceInterval",
+  "CrudeRateStandardError",
+  "AgeAdjustedRate",
+  "AgeAdjustedRateLower95ConfidenceInterval",
+  "AgeAdjustedRateUpper95ConfidenceInterval",
+  "AgeAdjustedRateStandardError",
+  "PercentageOfTotalDeaths"
+)
+```
+:::
+:::
+
+::: {.callout-note title="2b - Eliminación de información irrelevante" collapse="true"}
+##### 2b - Eliminación de información irrelevante
+
+Se realizaron las siguientes acciones para corregir los datos irrelevantes:
+
+-   2ba - Eliminación de observaciones innecesarias
+-   2bb - Eliminación de variables innecesarias
+
+::: {.callout-caution title="2ba - Eliminación de observaciones innecesarias" collapse="true"}
+###### 2ba - Eliminación de observaciones innecesarias
+
+Se seleccionaron las observaciones del año 2021
+
+```{r}
+#| code-fold: true
+#| output: false
+
+tmpUnderlyingCauseOfDeathAlcohol <- tmpUnderlyingCauseOfDeathAlcohol |> 
+  dplyr::filter(
+    YearCode == 2021
+  )
+```
+:::
+
+::: {.callout-caution title="2bb - Eliminación de variables innecesarias" collapse="true"}
+###### 2bb - Eliminación de variables innecesarias
+
+Se eliminaron las siguientes variables del dataset original:
+
+| Variable                                                                                                                                | Justificación                                                   |
+|-----------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
+| `Notes`                                                                                                                                 | Irrelevante para el análisis                                    |
+| `State`                                                                                                                                 | Información redundante con `State Code`                         |
+| `Year`<br>`YearCode`                                                                                                                    | Irrelevante para el análisis<br>Sólo se va analizar el año 2021 |
+| `Crude Rate`<br>`Crude Rate Lower 95% Confidence Interval`<br>`Crude Rate Upper 95% Confidence Interval`<br>`Crude Rate Standard Error` | Irrelevante para el análisis                                    |
+| `Age Adjusted Rate Lower 95% Confidence Interval`<br>`Age Adjusted Rate Upper 95% Confidence Interval`                                  | Información redundante con `Age Adjusted Rate Standard Error`   |
+
+```{r}
+#| code-fold: true
+#| output: false
+
+tmpUnderlyingCauseOfDeathAlcohol <- tmpUnderlyingCauseOfDeathAlcohol |> 
+  dplyr::select(
+    # Notes,
+    # State,
+    StateCode,
+    # Year,
+    # YearCode,
+    Gender,
+    # GenderCode,
+    Deaths,
+    Population,
+    # CrudeRate,
+    # CrudeRateLower95ConfidenceInterval,
+    # CrudeRateUpper95ConfidenceInterval,
+    # CrudeRateStandardError,
+    AgeAdjustedRate,
+    # AgeAdjustedRateLower95ConfidenceInterval,
+    # AgeAdjustedRateUpper95ConfidenceInterval,
+    AgeAdjustedRateStandardError,
+    PercentageOfTotalDeaths
+  )
+
+```
+:::
+:::
+
+##### 2c - Retipado de variables
+
+```{r}
+#| code-fold: true
+#| output: false
+tmpUnderlyingCauseOfDeathAlcohol$AgeAdjustedRate <- 
+  tmpUnderlyingCauseOfDeathAlcohol$AgeAdjustedRate |> as.numeric()
+```
+
+#### 3 - Limpieza de `rawFipsCodes`
+
+::: {.callout-note title="3a - Limpieza de datos sucios" collapse="true"}
+##### 3a - Limpieza de datos sucios
+
+Se realizaron las siguientes acciones para corregir los datos sucios:
+
+-   3aa - Renombrado de variables
+
+::: {.callout-caution title="3aa - Renombrado de variables" collapse="true"}
+###### 3aa - Renombrado de variables
+
+```{r}
+#| code-fold: true
+#| output: false
+
+rawNamesFipsCodes <- names(tmpFipsCodes)
+names(tmpFipsCodes) <- c("State", "StateCode", "StateName", "CountyCode", "County" )
+```
+:::
+:::
+
+::: {.callout-note title="3b - Eliminación de datos irrelevantes" collapse="true"}
+###### 3b - Eliminación de datos irrelevantes
+
+::: {.callout-caution title="3ba - Eliminación de variables innecesarias" collapse="true"}
+###### 3ba - Eliminación de variables innecesarias
+
+Se eliminaron las siguientes variables del dataset original:
+
+| Variable      | Justificación                |
+|---------------|------------------------------|
+| `county_code` | Irrelevante para el análisis |
+| `county`      | Irrelevante para el análisis |
+
+```{r}
+#| code-fold: true
+#| output: false
+
+tmpFipsCodes <- tmpFipsCodes |> 
+  dplyr::select(
+    State,
+    StateCode,
+    StateName #,
+    # CountyCode,
+    # County
+  ) |> 
+  unique()
+```
+:::
+:::
+
+#### 4 - Combinación de los tres *data.frame* originales
+
+Una vez limpios los tres data.frame de origen, se crearon tres conjuntos de datos para el análisis:
+
+-   `data`: Datos completos
+-   `data_overall`: Datos globales, sin estratificación por sexo
+-   `data_gender`: Datos estratificados por sexo
+
+```{r}
+#| code-fold: true
+#| output: false
+
+tmp <- dplyr::left_join(
+  tmpFipsCodes,
+  tmpCdiAlcohol,
+  by = dplyr::join_by(State == LocationAbbr)
+)
+tmp$StateCode <- as.numeric(tmp$StateCode)
+
+tmp_overall <- tmp |> 
+  dplyr::filter(
+    Stratification1 == "Overall"
+    )
+tmp_gender <- tmp |> 
+    dplyr::filter(
+    Stratification1 != "Overall"
+    )
+
+tmp <- dplyr::left_join(
+  tmp,
+  tmpUnderlyingCauseOfDeathAlcohol,
+  by = dplyr::join_by(
+    StateCode,
+    Stratification1 == Gender
+  ) 
+) |> 
+  dplyr::select(
+    State,
+    # StateCode,
+    StateName,
+    # YearStart,
+    # LocationDesc,
+    # QuestionID,
+    Question,
+    QuestionValue = DataValueAlt,
+    #QuestionValueLowConfidenceLimit = LowConfidenceLimit,
+    #QuestionValueHighConfidenceLimit = HighConfidenceLimit,
+    # Gender,
+    Sex = Stratification1,
+    Deaths,
+    Population,
+    AgeAdjustedDeathRate = AgeAdjustedRate,
+    AgeAdjustedDeathRateStandardError = AgeAdjustedRateStandardError,
+    PercentageOfTotalDeaths
+  )
+
+
+
+tmp_gender <- dplyr::left_join(
+  tmp_gender,
+  tmpUnderlyingCauseOfDeathAlcohol,
+  by = dplyr::join_by(
+    StateCode,
+    Stratification1 == Gender
+  ) 
+) |> 
+  dplyr::select(
+    State,
+    # StateCode,
+    StateName,
+    # YearStart,
+    # LocationDesc,
+    # QuestionID,
+    Question,
+    QuestionValue = DataValueAlt,
+    #QuestionValueLowConfidenceLimit = LowConfidenceLimit,
+    #QuestionValueHighConfidenceLimit = HighConfidenceLimit,
+    # Gender,
+    Sex = Stratification1,
+    Deaths,
+    Population,
+    AgeAdjustedDeathRate = AgeAdjustedRate,
+    AgeAdjustedDeathRateStandardError = AgeAdjustedRateStandardError,
+    PercentageOfTotalDeaths
+  )
+
+tmp_overall <- dplyr::left_join(
+  tmp_overall,
+  tmpUnderlyingCauseOfDeathAlcohol,
+  by = dplyr::join_by(
+    StateCode
+  ) 
+) |> 
+  dplyr::select(
+    State,
+    # StateCode,
+    StateName,
+    # YearStart,
+    # LocationDesc,
+    # QuestionID,
+    Question,
+    QuestionValue = DataValueAlt,
+    #QuestionValueLowConfidenceLimit = LowConfidenceLimit,
+    #QuestionValueHighConfidenceLimit = HighConfidenceLimit,
+    Gender,
+    #Sex = Stratification1,
+    Deaths,
+    Population,
+    AgeAdjustedDeathRate = AgeAdjustedRate,
+    AgeAdjustedDeathRateStandardError = AgeAdjustedRateStandardError,
+    PercentageOfTotalDeaths
+)
+data <- tmp |> 
+  dplyr::select(
+    State,
+    Question,
+    QuestionValue,
+    Sex,
+    Deaths,
+    Population,
+    AgeAdjustedDeathRate,
+    PercentageOfTotalDeaths
+  ) |> 
+  tidyr::pivot_wider(names_from = Question, values_from = QuestionValue) |> 
+  dplyr::select(-`NA`)
+
+
+data_overall <- tmp_overall |> 
+  dplyr::select(
+    State,
+    Question,
+    QuestionValue,
+    # Sex,
+    Deaths,
+    Population,
+    AgeAdjustedDeathRate,
+    PercentageOfTotalDeaths
+  ) |> 
+  tidyr::pivot_wider(names_from = Question, values_from = QuestionValue)
+
+data_gender <- tmp_gender |> 
+  dplyr::select(
+    State,
+    Question,
+    QuestionValue,
+    Sex,
+    Deaths,
+    Population,
+    AgeAdjustedDeathRate,
+    PercentageOfTotalDeaths
+  ) |> 
+  tidyr::pivot_wider(names_from = Question, values_from = QuestionValue)
+
+data$State <- factor(
+  data$State, 
+  levels = levels(as.factor(data$State))[order(data$AgeAdjustedDeathRate)])
+
+data_overall$State <- factor(
+  data_overall$State, 
+  levels = levels(as.factor(data_overall$State))[order(data_overall$AgeAdjustedDeathRate)])
+
+data_gender$State <- factor(
+  data_gender$State, 
+  levels = levels(as.factor(data_gender$State))[order(data_gender$AgeAdjustedDeathRate)])
+
+# Limpieza del dataset combinado
+data$Deaths <- as.numeric(data$Deaths)
+data$Population <- as.numeric(data$Population)
+data_overall$Deaths <- as.numeric(data_overall$Deaths)
+data_overall$Population <- as.numeric(data_overall$Population)
+data_gender$Deaths <- as.numeric(data_gender$Deaths)
+data_gender$Population <- as.numeric(data_gender$Population)
+
+
+# Renombrado
+names(data_gender) <- c(
+  'State',
+  'Sex',
+  'Deaths',
+  'Population',
+  'AgeAdjustedDeathRate',
+  'PercentageOfTotalDeaths',
+  'HeavyDrinkingAdults',
+  'BingeDrinkingFrecuencyAdults',
+  'BingeDrinkingIntensityAdults',
+  'BingeDrinkingPrevalenceAdults'
+)
+
+names(data) <- c(
+  'State',
+  'Sex',
+  'Deaths',
+  'Population',
+  'AgeAdjustedDeathRate',
+  'PercentageOfTotalDeaths',
+  'HeavyDrinkingAdults',
+  'BingeDrinkingFrecuencyAdults',
+  'BingeDrinkingIntensityAdults',
+  'BingeDrinkingPrevalenceAdults'
+)
+
+names(data_overall) <- c(
+  'State',
+  #'Sex',
+  'Deaths',
+  'Population',
+  'AgeAdjustedDeathRate',
+  'PercentageOfTotalDeaths',
+  'HeavyDrinkingAdults',
+  'BingeDrinkingFrecuencyAdults',
+  'BingeDrinkingIntensityAdults',
+  'BingeDrinkingPrevalenceAdults'
+)
+
+```
+
+## Salidas del subproceso
+
+| Objeto         | Descripción del *data.frame*                                                                                                              | Filas                  | Columnas               |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------|------------------------|------------------------|
+| `data`         | Indicadores de enfermedades crónicas (CDI) del área de interés 'Alcohol' y de mortalidad por alcohol, año 2021, por estado de EEUU y sexo | `r nrow(data)`         | `r ncol(data)`         |
+| `data_overall` | Indicadores de enfermedades crónicas (CDI) del área de interés 'Alcohol' y de mortalidad por alcohol, año 2021, por estado de EEUU y sexo | `r nrow(data_overall)` | `r ncol(data_overall)` |
+| `data_gender`  | Indicadores de enfermedades crónicas (CDI) del área de interés 'Alcohol' y de mortalidad por alcohol, año 2021, por estado de EEUU y sexo | `r nrow(data_gender)`  | `r ncol(data_gender)`  |
+
+```{r}
+#| code-fold: true
+#| output: false
+
+saveRDS(
+  data,
+  file = here::here('data', 'lab', 'data.rds')
+) 
+saveRDS(
+  data_gender,
+  file = here::here('data', 'lab', 'data_gender.rds')
+) 
+saveRDS(
+  data_overall,
+  file = here::here('data', 'lab', 'data_overall.rds')
+) 
+```
+
+```{r}
+summary(data)
+summary(data_gender)
+summary(data_overall)
+```
+
+### Limpieza de las variables intermedias del subproceso
+
+```{r Limpieza - limpieza}
+#| code-fold: true
+#| output: false
+
+rm(list = c(
+  'esDatoCauseOfDeathConEstadoMaestra',
+  'esDatoCdiConEstadoMaestra',
+  'esEstadoMaestraConDatoCauseOfDeath',
+  'esEstadoMaestraConDatosCdi',
+  'esVarCardinalidadBaja',
+  'esVarCardinalidadNormal',
+  'idxVarNoData',
+  'listaEstadosCauseOfDeath',
+  'listaEstadosCdiAlcohol',
+  'listaEstadosDatosCdiSinEstadoMaestra',
+  'listaEstadosMaestra',
+  'listaEstadosMaestraSinDatosCauseOfDeath',
+  'listaEstadosMaestraSinDatosCdi',
+  'listaNombresMaestra',
+  'namesVarNoData',
+  'namesVarData',
+  'namesVarCardinalidadNormal',
+  'nMissingDataByCol',
+  'rawCdiAlcohol',
+  'rawFipsCodes',
+  'rawUnderlyingCauseOfDeathAlcohol',
+  'tmp',
+  'tmp_gender',
+  'tmp_overall',
+  'tmpCdiAlcohol_byGender',
+  'tmpCdiAlcohol_overall',
+  'cardinality',
+  'cardinalityCdiAlcohol',
+  'esIrrelevanteCdiAlcohol',
+  'isCharacter',
+  'listaEstadosDatosCauseOfDeathSinEstadosMaestra',
+  'rawNamesFipsCodes',
+  'rawNamesUnderlyingCauseOfDeath',
+  'varCdiAlcohol',
+  'varCharacterNames',
+  'tmpCdiAlcohol',
+  'tmpFipsCodes',
+  'tmpUnderlyingCauseOfDeathAlcohol'
+))
+gc()
+```

@@ -1,0 +1,102 @@
+---
+subtitle: "Material y métodos"
+author: Teodoro José Martínez Arán
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+# Visión general de la metología utilizada en el análisis {.unnumbered}
+
+El análisis se realizó siguiendo la siguiente secuencia de subprocesos:
+
+| ID  | Denominación                                      | Finalidad                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|-----|---------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 00  | [Configuración](05a_config.qmd)                   | · 00a - Definición de la configuración de R y RStudio que garantice la reproductibilidad de los resultados<br>· 00b - Instalación los paquetes de R necesarios para el análisis                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 01  | [Ingesta](05b_ingesta.qmd)                        | · 01a - Identificación de los datos necesarios para el análisis y sus fuentes, si existen<br>· 01b - Definición del método y la configuración de la ingesta (codificación de caracteres, valores faltantes, datos numéricos, categóricos, lógicos, fechas…)<br>· 01c - Creación de los *data.frame* de datos crudos<br>· 01d - Validación de la fase de ingesta                                                                                                                                                                                                                                                                                               |
+| 02  | [Limpieza](05c_limpieza.qmd)                      | · 02a - Identificación de la información sucia, incorrecta, incompleta, imprecisa, irrelevante o incómoda<br>· 02b - Reingesta, modificación, reemplazo o borrado de esta información no deseada, de acuerdo a la necesidad                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| 03  | [Análisis exploratorio de datos](05d_eda.qmd)     | · 03a - Visión general del *data.frame*<br>· 03b - Exploración variables categóricas ($\chi^2$ y *test de Fisher*)<br>· 03c - Exploración variables numéricas (*Estadística descriptiva*)<br>· 03d - Exploración distribuciones (*test de sesgo y curtosis*)<br>· 03e - Exploración normalidad (*QQ-plots* y *Shapiro-Wilk*)<br>· 03f - Comparación de grupos (*Boxplots, test no-paramétricos*)<br>· 03g - Exploración de correlaciones<br>· 03h - Exploración de datos (*Modelos lineales y no lineales*)<br>· 03i - Exploración `NA`'s y outliers                                                                                                          |
+| 04  | [Transformación de datos](05e_transformacion.qmd) | · 4a - Tratamiento de valores faltantes<br>· 4b - Tratamiento de valores atípicos (*outliers*)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 05  | [Análisis](06_resultados.qmd)                     | · 05fa - Selección de los datos adecuados para el análisis cluster<br>· 05fb - Estandarización de valores numéricos<br>· 05fc - Cálculo de la distancia entre observaciones<br>· 05fd - Análisis de tendencia de agrupación<br>· 05fe - Elección del método y la vinculación de grupos<br>· 05ff - Elección del número de grupos finales de forma arbitraria basados en ciertos estadísticos de agrupación.<br>· 05fg - Representación e interpretación de los resultados.<br>· 05fh - Evaluación de la importancia de las variables<br>· 05fi - Visualización de las agrupaciones cluster<br>· 05fj - Validación de la agrupación<br>· 05fk - Interpretación |
+
+## Metodología utilizada
+
+### 00 - Configuración del equipo
+
+#### Configuración de R y RStudio
+
+Para facilitar la reproductibilidad del análisis y la coherencia de los resultados obtenidos en distintos equipos, se establecieron las siguientes opciones de configuración:
+
+-   Formato de números grandes sin notación científica: `scipen = 999`
+-   Semilla aleatoria fija: `set.seed = 2024`
+
+```{r Configuración de R y RStudio}
+#| code-fold: true
+
+## Configuración global
+options(
+  # Impide que los números grandes se muestren con notación científica
+  scipen = 999
+)
+
+## Semilla aleatoria para el análisis
+set.seed(2024)
+```
+
+### 01 - Ingesta
+
+Se utilizaron como origen de datos los siguientes conjuntos de datos:
+
+-   Indicadores de salud relacionados con el consumo de alcohol ([U.S. Chronic Disease Indicators (CDI), 2023 Release](https://data.cdc.gov/Chronic-Disease-Indicators/U-S-Chronic-Disease-Indicators-CDI-2023-Release/g4ie-h725/about_data))
+-   Tasas de mortalidad relacionadas con el consumo de alcohol ([U.S. Underlying Cause of Death, 2018-2022, Single Race](https://wonder.cdc.gov/ucd-icd10-expanded.html))
+-   Códigos FIPS de los estados de EEUU ([Dataset with FIPS codes for US states and counties](https://search.r-project.org/CRAN/refmans/tidycensus/html/fips_codes.html))
+
+### 02 - Limpieza
+
+Para la limpieza de los datos crudos se siguió una metodología sistemática para identificar la información sucia, incorrecta, incompleta, imprecisa, irrelevante o incómoda, en una primera fase, para posteriormente reingestar, modificar, reemplazar o borrar esta información no deseada de acuerdo a la necesidad.
+
+### 03 - Análisis exploratorio de datos
+
+El análisis exploratorio siguió la metodología propuesta por [@yuzardatascience2021]. Incluye las siguientes actividades:
+
+-   03a - Visión general del *data.frame*
+-   03b - Explorar variables categóricas ($\chi^2$ y test de Fisher)
+-   03c - Explorar variables numéricas (*Estadística descriptiva*)
+-   03d - Explorar distribuciones (*Test de sesgo y curtosis*)
+-   03e - Explorar normalidad (*QQ-plots y test de Shapiro-Wilk*)
+-   03f - Comparar grupos (*Boxplots, test no paramétricos*)
+-   03g - Explorar correlaciones
+-   03h - Explorar datos (*Modelización exploratoria sobre las correlaciones*)
+-   03i - Explorar NAs y outliers
+
+### 04 - Transformaciones de datos
+
+Se realizaron las siguientes tareas de transformación:
+
+-   4a - Tratamiento de valores faltantes
+-   4b - Tratamiento de valores atípicos (*outliers*)
+-   4c - Estandarización de las variables numéricas
+
+### 05 - Análisis
+
+Se llevó a cabo un conjunto de análisis cluster (5 en total), siguiendo la siguiente metodología
+
+-   05fa - Selección de los datos adecuados para el análisis cluster
+-   05fb - Estandarización de valores numéricos
+-   05fc - Cálculo de la distancia entre observaciones
+-   05fd - Análisis de tendencia de agrupación
+-   05fe - Elección del método y la vinculación de grupos
+-   05ff - Elección del número de grupos finales de forma arbitraria basados en ciertos estadísticos de agrupación.
+-   05fg - Representación e interpretación de los resultados.
+-   05fh - Evaluación de la importancia de las variables
+-   05fi - Visualización de las agrupaciones cluster
+-   05fj - Validación de la agrupación
+-   05fk - Interpretación
+
+Durante la fase de análisis exploratorio se evidenció una marcada diferencia en la mortalidad relacionada con alcohol entre ambos sexos, por lo que se analizó el efecto de la variable `Sex`.
+
+Además, se observaron problemas de valores atípicos en los distintos conjuntos de datos considerados para el análisis. Dado el potencial interés para nuestro análisis de estas observaciones atípicas, los análisis se realizaron sobre datasets completos (con *outliers*) y recortados (sin *outliers*).

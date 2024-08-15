@@ -1,0 +1,134 @@
+---
+title: "Intervalo de Confianza para la media"
+author: "Teodoro J. Martínez Arán"
+format: html
+toc: true
+toc-location: left
+---
+
+## Preparación
+### Carga paquetes
+```{r carga paquetes}
+# Carga / instalación de paquetes necesarios
+if (!require(DescTools)) install.packages('DescTools')
+if (!require(gginference)) install.packages('gginference')
+```
+
+### Carga datos
+```{r datos}
+data(iris)
+x <- iris$Sepal.Length
+```
+
+## Intervalo de confianza para la media ($IC_{mean}$)
+
+### Opción preferida - `DescTools::MeanCI()`
+
+|Parámetro|Descripción
+|-|---|
+|`x`|Vector numérico no vacío|
+|`sd`|Desviación estándar de `x`<br>· Si se especifica, es interpretado como la $\sigma$ poblacional, y se utilizarán los quantiles normales para construir el intervalo de confianza<br>· Si se deja en `NULL` (por defecto), se calculará `sd(x)`, y será utilizada en combinación con una distribución $t$ de Student |
+|`trim`|Fracción de los datos (0-0.5) que será recortada en ambos extremos de la distribución|
+|`method`|Tipo de intervalo de confianza requerido: `classic` o `boot`|
+|`conf.level`|Nivel de confianza del intervalo|
+|`sides`|Especifica si el intervalo de confianza es:<br>· `two.sides`: bilateral, <br>· `right` unilateral superior o <br>· `left ` unilateral inferior|
+|`na.rm`|Lógico. Indica si deben eliminarse o no los valores `NA` antes del cálculo del $IC$|
+|`...`|Si `method = 'boot'`, pueden especificarse parámetros adicionales para los parámetros `type`, `R` y `parallel` de la función anidadada `boot()`:<br><br>Opciones para el parámetro `type`: <br>· `type = 'norm'`: Aproximación normal<br>· `type = 'basic'`: Método bootstrap básico (por defecto)<br>· `type = 'stud'`: Método bootstrap con corrección de Student<br>· `type = 'perc'`: Método bootstrap de percentiles<br>· `type = 'bca'`: Incluye  los estadísticos utilizados en la estimación de los límites superior e inferior<br><br>Opciones para el parámetro `R`: <br>· Indicar el número de repeticiones del proceso *bootstrapping* (por defecto 999)<br><br>Opciones para el parámetro `parallel`:<br>· `parallel = 'no':` Sin computación distribuida<br> (por defecto)· `parallel = 'multicore':` Cada hilo hereda el entorno de la sesión actual, incluyendo el espacio de trabajo y los paquetes cargados (pero no la semilla aleatoria) (no disponible en Windows)<br>· `parallel = 'snow':` Pensado para trabajo multicore en entornows Windows <br><br>**OJOCUIDAO**: Cargar el entorno `paralell` puede cambiar la semilla aleatoria, por lo que para garantizar la reproducibilidad debe cargarse antes de invocar la función `set.seed()` |
+
+## Ejemplos (adaptados de de la documentación de la función `DescTools::MeanCI` en R)
+
+### Intervalo de confianza básico
+Las opciones por defecto de la función `DescTools::MeanCI()` son equivalentes a un test de hipótesis para la media $t$-Student con las siguientes hipótesis:
+
++ $H_0$: La media poblacional es igual a 0
++ $H_1$: La media poblacional no es igual a 0
+
+```{r}
+# Intervalo de confianza con configuración por defecto con DescTools::MeanCI()
+DescTools::MeanCI(x, na.rm = TRUE)
+
+# Resultado del test t-Student para la media con configuración por defecto
+t.test(x, na.rm = T)
+```
+### Intervalos de confianza especificando el nivel de confianza
+
+Si especificamos el nivel de confianza, el resultado obtenido también es equivalente a un contraste para la media con una $t$-Student:
+```{r}
+# Intervalo de confianza con DescTools::MeanCI(), nivel confianza 0.99
+DescTools::MeanCI(x, conf.level = 0.99, na.rm = TRUE)
+
+# Es lo mismo que
+t.test(x, conf.level = 0.99, alternative = 't')
+```
+
+### Intervalos de confianza unilaterales
+Cuando se especifica un intervalo de confianza unilateral, su equivalente es un contraste para la media con una $t$-Student unilateral:-
+```{r}
+# Intervalo de confianza con DescTools::MeanCI(), unilateral izquierda
+DescTools::MeanCI(x, sides = "left")
+# Es lo mismo que:
+t.test(x, alternative = "greater")
+```
+
+
+### Intervalos de confianza en los que se especifica la $\sigma$ poblacional
+Si no se especifica el parámetro `sd`, se calculará una $t$-Student, como en los ejemplos anteriores.
+
+Si se especifica la sigma poblacional, los extremos superior e inferior del intervalo se calcularán utilizando los cuantiles de una normal. 
+
+```{r}
+# Intervalo de confianza con DescTools::MeanCI(), sigma poblacional = 25
+DescTools::MeanCI(x, sd = 25, na.rm = TRUE)
+
+# Es lo mismo que
+a <- qnorm(p = (1 - 0.95)/2) * 25/sqrt(length(x))
+res <- c(
+  mean = mean(x), 
+  lwr.ci = mean(x) + a, 
+  upr.ci = mean(x) - a
+  )
+names(res) <- c("mean", "lwr.ci", "upr.ci")
+```
+
+### Intervalos de confianza con *bootstrapping*
+Podemos tener varios tipos de IC mediante *bootstrapping*. Por defecto, se asumen los siguientes parámetros: `R = 999`, `parallel = boot.parallel` y `type = basic`
+```{r}
+# Métodos de cálculo de IC mediante bootstrapping
+## Aproximación normal
+DescTools::MeanCI(x, method = "boot", type = "norm", na.rm = TRUE)
+
+## Métodos con media recortada
+### Aproximación normal, media recortada
+DescTools::MeanCI(x, trim = 0.1, method = "boot", type = "norm",  na.rm = TRUE)
+
+### Método bootstrap básico (por defecto)
+DescTools::MeanCI(x, trim = 0.1, method = "boot", type = "basic", na.rm = TRUE)
+
+### Método bootstrap con aproximación de Student
+DescTools::MeanCI(x, trim = 0.1, method = "boot", type = "stud",  na.rm = TRUE)
+
+### Método bootstrap por percentiles
+DescTools::MeanCI(x, trim = 0.1, method = "boot", type = "perc",  na.rm = TRUE)
+
+### Método bootstrap con información estadística
+DescTools::MeanCI(x, trim = 0.1, method = "boot", type = "bca",   na.rm = TRUE)
+
+```
+
+### Uso de la función `DescTools::MeanCI()` en varias columnas a la vez
+Se puede hacer uso de la función `sapply()` para aplicarlo a varias columnas de un data.frame a la vez.
+
+```{r}
+
+# Uso de la función `DescTools::MeanCI()` en varias columnas a la vez
+round(
+  t(
+    sapply(
+      iris[, 1:4], 
+      DescTools::MeanCI, 
+      na.rm = TRUE)
+    ), 3
+  )
+
+```
+

@@ -1,0 +1,10 @@
+# Dependencias de la librería 'ggbarstat'
+libgmp-dev
+libmpfr-dev
+
+# Dependencias de la librería 'gtsummary'
+libv8-dev 
+libnode-dev
+
+# Dependencias de la librería 'rio'
+libcurl4-openssl-dev

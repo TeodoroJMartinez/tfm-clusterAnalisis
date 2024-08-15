@@ -1,0 +1,365 @@
+---
+subtitle: "Material y métodos"
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+# Subproceso 01 - Ingesta {.unnumbered}
+
+## Descripción del subproceso
+
+Subproceso destinado a recopilar datos desde sus fuentes originales, y ubicarlos en un entorno en el que se pueda acceder a ellos, usarlos o analizarlos.
+
+El subproceso ejecuta las siguientes acciones:
+
+-   01a - Identificar los datos necesarios para el análisis y sus fuentes, si existen
+-   01b - Definir el método y la configuración de la ingesta (ingesta de datos existentes o creación de datasets personalizados) (codificación de caracteres, valores faltantes, datos numéricos, categóricos, lógicos, fechas...)
+-   01c - Crear los *data.frame* de datos crudos
+-   01d - Validar la fase de ingesta
+
+## Acciones del subproceso
+
+### 01a - Identificar los datos necesarios para el análisis y sus fuentes
+
+Para el análisis se utilizaron los siguientes datos:
+
+| Datos                                                           | Fuente                                                                                                                                                                      | Justificación                                                                        |
+|-----------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| 1 - Indicadores de salud relacionados con el consumo de alcohol | [U.S. Chronic Disease Indicators (CDI), 2023 Release](https://data.cdc.gov/Chronic-Disease-Indicators/U-S-Chronic-Disease-Indicators-CDI-2023-Release/g4ie-h725/about_data) | Datos necesarios para hacer el análisis de agrupación (variables predictoras)        |
+| 2 - Tasas de mortalidad relacionadas con el consumo de alcohol  | [U.S. Underlying Cause of Death, 2018-2022, Single Race](https://wonder.cdc.gov/ucd-icd10-expanded.html)                                                                    | Datos de la variable respuesta a predecir en el análisis de regresión                |
+| 3 - Códigos FIPS de los estados de EEUU                         | [Dataset with FIPS codes for US states and counties](https://search.r-project.org/CRAN/refmans/tidycensus/html/fips_codes.html)                                             | Tabla maestra con los códigos FIPS identificativos de los estados y condados de EEUU |
+
+#### 1 - Indicadores de salud relacionados con el consumo de alcohol
+
+[El conjunto de datos *Cronic Disease Indicators (CDI)*](https://data.cdc.gov/resource/g4ie-h725.csv) ha sido elaborado por el *Centres of Disease Control* de USA. Contiene un conjunto de 124 indicadores desarrollados por consenso entre todos los estados miembros de US, utilizado para definir, recoger e informar sobre las enfermedades crónicas de manera uniforme entre distintos estados y territorios. Los indicadores se agrupan en 17 áreas de interés. Puede consultarse una descripción detallada de los indicadores que contiene en el artículo [Indicators for Chronic Disease Surveillance — United States, 2013](https://www.cdc.gov/mmwr/preview/mmwrhtml/rr6401a1.htm) [@holt2015]. Para una descripción más detallada, puede consultarse la [web del CDI](www.cdc.gov/cdi).
+
+Para nuestro análisis, se seleccionó el subconjunto de indicadores del área de interés `Alcohol`.
+
+::: {.callout-note title="Áreas de interés del conjunto de datos CDI del CDC" collapse="true"}
+Además de las áreas de interés analizadas en el análisis, existen otras áreas de interés en el dataset:
+
+| Topic area                                                                                                                        | Justification                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|-----------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [Alcohol](https://www.cdc.gov/cdi/indicator-definitions/alcohol.html)                                                             | About 178,000 people die from excessive alcohol use each year in the United States. Excessive drinking includes binge drinking, heavy drinking, and any drinking during pregnancy or by people younger than 21. Policies that make alcohol less available and less affordable can prevent excessive drinking and related harms. Individuals, organizations, communities, and states can support proven solutions to reduce alcohol-related harms and improve health and safety.                                                                                                                                                                    |
+| [Arthritis](https://www.cdc.gov/cdi/indicator-definitions/arthritis.html)                                                         | About 53 million U.S. adults have arthritis. That number is expected to increase as people live longer. Arthritis is a general term for conditions that affect the joints, tissues around the joint, and other connective tissues. Managing arthritis symptoms is important to reduce pain, prevent or delay disability, and improve overall quality of life. Public health professionals and others can help build awareness of proven self-management strategies to reduce arthritis pain so patients can pursue the activities that are important to them.                                                                                      |
+| [Asthma](https://www.cdc.gov/cdi/indicator-definitions/asthma.html)                                                               | About 25 million U.S. children and adults have asthma, which kills over 3,500 people each year. Asthma affects the lungs, causing wheezing, breathlessness, chest tightness, and coughing. CDC's National Asthma Control Program (NACP) helps people control and manage their asthma for better health. Public health and other professionals can play a role in asthma-related surveillance, public education, and provider training.                                                                                                                                                                                                             |
+| [Cancer](https://www.cdc.gov/cdi/indicator-definitions/cancer.html)                                                               | Cancer is the second leading cause of death in the United States, causing 1 in every 6 deaths. We can reduce cancer cases and deaths by limiting behavioral and environmental risks, making screening and treatment available to all, supporting medically underserved populations, and improving quality of life for those who have survived cancer. The Community Preventive Services Task Force recommends several patient- and provider-focused interventions to increase screening for breast, cervical, and colorectal cancers.                                                                                                              |
+| [Cardiovascular Disease](https://www.cdc.gov/cdi/indicator-definitions/cardiovascular-disease.html)                               | Heart disease is the number one cause of death and disability in the United States. Cardiovascular disease not only includes heart disease, but also stroke, heart failure, and atrial fibrillation. Common behaviors and health conditions put people at risk, like smoking, unhealthy diet, inactivity, excessive alcohol, high blood pressure, high cholesterol, and obesity. We can prevent cardiovascular disease and reduce related death and disability with lifestyle changes, control of risk factors, and timely, effective treatment.                                                                                                   |
+| [Chronic Kidney Disease](https://www.cdc.gov/cdi/indicator-definitions/chronic-kidney-disease.html)                               | More than 1 in 7 U.S. adults has chronic kidney disease (CKD), though most do not know it. CKD is caused by damaged kidneys that cannot properly filter blood, causing fluids and waste to build up in the body. CKD usually gets worse over time, but treatment and lifestyle changes can slow it down. Public health strategies—from public and provider education, to monitoring CKD and its risk factors—can promote kidney health.                                                                                                                                                                                                            |
+| [Chronic Obstructive Pulmonary Disease](https://www.cdc.gov/cdi/indicator-definitions/chronic-obstructive-pulmonary-disease.html) | Chronic obstructive pulmonary disease (COPD) is 1 of the top 10 causes of death in the United States. Nearly 16 million U.S. adults have COPD, and many more do not know they have it. COPD prevents airflow to the lungs, causing breathing problems. There is no cure for COPD, but it can be managed and treated. Public health professionals and others can help build awareness of COPD and support prevention, early diagnosis, treatment, and management strategies.                                                                                                                                                                        |
+| [Cognitive Health Caregiving](https://www.cdc.gov/cdi/indicator-definitions/cognitive-health-caregiving.html)                     | About 1 in 10 adults (45 and older) reports worsening memory loss (or cognitive decline) and another 1 in 4 reports caring for someone who has a cognitive impairment. Dementias, like Alzheimer's disease, start with mild memory loss and can lead to an inability to carry on conversations or respond to one's environment. Caregiving can be rewarding, but it can also put a burden on caregivers, at the risk of their own health. As our aging population grows, so does the need for public health strategies to reduce the impact of dementias and raise awareness of caregiving as a public health issue.                               |
+| [Diabetes](https://www.cdc.gov/cdi/indicator-definitions/diabetes.html)                                                           | About 38 million U.S. adults have diabetes, and 1 in 5 of them don't know it. Diabetes is a long-lasting condition that can lead to serious disease and death over time. There is no cure for diabetes, but we can prevent or manage the most common type (type 2) by eating healthy, being active, and keeping a healthy weight. Public health efforts can offer proven lifestyle change programs to reduce diabetes risk for people.                                                                                                                                                                                                             |
+| [Disability](https://www.cdc.gov/cdi/indicator-definitions/disability.html)                                                       | More than 1 in 4 U.S. adults (27%) has a disability. A disability is any condition of the body or mind that makes it more difficult to do certain tasks. People with disabilities are more likely to report poor health than those without disabilities. We can best serve people with disabilities by including them in all health care, health promotion, and disease prevention programs to help them stay active, healthy, and thrive.                                                                                                                                                                                                         |
+| [Health Status](https://www.cdc.gov/cdi/indicator-definitions/health-status.html)                                                 | About 1 in 6 U.S. adults report fair or poor health, which is notable since self-rated health can predict hospitalization and death. Health — including physical, mental, emotional, and functional health — is fundamental for everyday living. We can help improve overall health by addressing chronic disease risk factors and social determinants of health, and by identifying and linking those in poor health to community resources.                                                                                                                                                                                                      |
+| [Immunization](https://www.cdc.gov/cdi/indicator-definitions/immunization.html)                                                   | Each year in the United States, many people get diseases that vaccines could have prevented. Vaccines help the body create proteins that fight off infections (called antibodies), protecting us from potentially life-threatening diseases. Yet some children and adults do not get their recommended vaccines. The types of vaccines needed are based on age, and in some cases, certain chronic diseases or risk factors.                                                                                                                                                                                                                       |
+| [Maternal Health](https://www.cdc.gov/cdi/indicator-definitions/maternal-health.html)                                             | Maternal health refers to women's health and well-being during pregnancy, childbirth, and postpartum (after childbirth). Health problems—like diabetes, high blood pressure, and depression—can arise before, during or after pregnancy, putting the mother's or infant's health at risk. Alcohol and tobacco use during pregnancy can also harm the mother's and baby's health. Access to good health care can help women adopt healthier habits, prevent and address complications, and improve pregnancy and postpartum health.                                                                                                                 |
+| [Mental Health](https://www.cdc.gov/cdi/indicator-definitions/mental-health.html)                                                 | Nearly 1 in 4 U.S. adults had a mental illness in the past year, and almost 3 in 10 high school students reported poor mental health. Mental health—which includes emotional, psychological, and social well-being—is important for overall health and well-being. Mental health conditions (like depression) increase the risk of chronic conditions, which in turn can increase the risk of mental health conditions. Public health strategies can address these conditions and promote mental health and emotional well-being.                                                                                                                  |
+| [Nutrition, Physical Activity, and Weight Status](https://www.cdc.gov/cdi/indicator-definitions/npao.html)                        | Poor nutrition and physical inactivity increase the risk of chronic conditions like obesity, depression, type 2 diabetes, heart disease, and some cancers—which can lead to disability and premature death. Fewer than 1 in 10 children and adults eat their recommended vegetables. A quarter of adults (25%) and even fewer adolescents (16%) meet U.S. physical activity guidelines. As many as 40% of adults and 20% of adolescents have obesity. Public health approaches, including surveillance, education, policy and environmental strategies, and resources are needed to make healthy eating and active living accessible for everyone. |
+| [Older Adults](https://www.cdc.gov/cdi/indicator-definitions/older-adults.html)                                                   | The U.S. population is aging, with almost a quarter of the population expected to be 65 or older by 2060. Aging increases the risk of chronic diseases like dementia, heart disease, type 2 diabetes, arthritis, and cancer. Older adults are also more vulnerable to severe illness from infections, including flu and pneumonia. Effective strategies for healthy aging are needed to improve the length and quality of life of older adults, and their ability to live independently.                                                                                                                                                           |
+| [Oral Health](https://www.cdc.gov/cdi/indicator-definitions/oral-health.html)                                                     | Nearly all Americans have had tooth decay in their lifetime. Left untreated, oral diseases can cause severe pain, infections, tooth loss, and (rarely) even death. Poor oral health limits a person's ability to eat, learn, and work. It unevenly affects members of racial and ethnic groups and those with low income and education. Most oral diseases can be prevented by limiting risks like tobacco, alcohol, and sugary foods and drinks. Public health strategies—like community water fluoridation and school sealant programs—are safe, cost-effective ways proven to prevent cavities and improve oral health equity.                  |
+| [Sleep](https://www.cdc.gov/cdi/indicator-definitions/sleep.html)                                                                 | About one-third of U.S. adults and children (under 14) and three-quarters of high schoolers do not get enough sleep. Insufficient sleep is linked to increased risk of anxiety, depression, obesity, heart disease, injury, and other serious conditions. We can promote sleep health through research and surveillance, public and provider education, clinical guidance, and traffic safety education.                                                                                                                                                                                                                                           |
+| [Social Determinants of Health](https://www.cdc.gov/cdi/indicator-definitions/sdoh.html)                                          | Social determinants of health (SDOH) are nonmedical factors and conditions in our environment that influence health, well-being, and quality of life. They include things like economic stability; our social, community, and built environments; and access to quality health care and education. Addressing differences in SDOH can advance health equity so everyone has the opportunity for optimal health. Action and collaboration across sectors (e.g., public health, transportation, education, housing, health care) and from public, private, and community agencies are needed to address SDOH.                                        |
+| [Student Health](https://www.cdc.gov/cdi/indicator-definitions/student-health.html)                                               | Youth risk behaviors—like physical inactivity, unhealthy diet, and tobacco, alcohol, and other drug use—are linked to lower academic achievement and poorer mental and physical health. On the other hand, healthy students are better learners, and academic achievement bears a lifetime of health benefits. With 8 hours a day of direct contact with students, U.S. schools are uniquely positioned to promote student health behaviors and reduce unhealthy behaviors for better health and well-being. They can do this using strategies from the Whole School, Whole Community, Whole Child model.                                          |
+| [Tobacco](https://www.cdc.gov/cdi/indicator-definitions/tobacco.html)                                                             | Cigarette smoking is the leading preventable cause of disease, death, and disability in the United States. Smoking and secondhand smoke exposure cause over 480,000 U.S. deaths each year. Nearly 12% of U.S. adults currently smoke cigarettes and 10% of middle and high school students currently use a tobacco product. Increasing the use of proven tobacco control strategies can reduce tobacco use and related diseases.                                                                                                                                                                                                                   |
+:::
+
+#### 2 - Tasas de mortalidad relacionadas con el consumo de alcohol
+
+El conjunto de datos [Underlying Cause of Death](https://wonder.cdc.gov/ucd-icd10-expanded.html) contiene datos de mortalidad y población para todos los condados de EEUU. Los datos provienen de los certificados de defunción de los residentes de EEUU. Cada certificado de muerte identifica una única causa de muerte, junto con un conjunto de datos demográficos.
+
+Para nuestro análisis, se seleccionaron los datos de mortalidad por alcohol, ajustada por edad, estado y año. Se descargaron además, los datos globales, para poder comparar la media de cada uno de los niveles de las variables con la media global.
+
+::: {.callout-note title="Configuración de la herramienta de descarga de datos WONDER del CDC para obtener el conjunto de datos utilizado en el análisis" collapse="true"}
+Los datos para el análisis se obtuvieron con la siguiente configuración de la herramienta de búsqueda [CDC WONDER](https://wonder.cdc.gov/controller/datarequest/D158):
+
+| Sección                                        | Subsección              | Parámetro                                                                                                                                                 | Configuración                            |
+|------------------------------------------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------|
+| 1\. Organize table layout                      | Group Results By        | · `Group Results By`<br>· `And By` <br>· `And By`                                                                                                         | State<br>Year<br>Gender                  |
+|                                                | Default Measures        | · `Deaths`<br> · `Population`<br>· `Crude Rate`                                                                                                           | TRUE<br>TRUE<br>TRUE                     |
+|                                                | For Crude Rates         | · `95% Confidence Interval`<br>· `Standard Error`                                                                                                         | TRUE<br>TRUE                             |
+|                                                | Age Adjusted Rate       | · `Age Adjusted Rate`<br>· `95% Confidence Interval`<br>· `Standard Error`                                                                                | TRUE<br>TRUE<br>TRUE                     |
+|                                                | Total Deaths            | · `Percent of Total Deaths`                                                                                                                               | TRUE                                     |
+|                                                | Additional Rate Options | · `Calculate Rates Per`<br>· `Standard Population`                                                                                                        | 100,000<br> 2000 U.S. Std. Population    |
+| 2\. Select location                            | Grouping method         | · `Click a button to choose locations by US-Mexico Border Region, Border State Area, State, Census Region or HHS Region`                                  | States                                   |
+|                                                | Selected codes          | · `Browse or search to find items in the States Finder Tool, then highlight the items to use for this request.`                                           | *All* (The United States)                |
+|                                                | Urbanization            | · `Pick between`                                                                                                                                          | 2013 Urbanization, All categories        |
+| 3\. Select demographics                        | Age Groups              | · `Pick between`                                                                                                                                          | All ages                                 |
+|                                                | Gender                  | · `Gender`                                                                                                                                                | All Genders                              |
+|                                                | Hispanic origin         | · `Hispanic origin`                                                                                                                                       | All Origins                              |
+|                                                | Single Race             | · `Pick between`                                                                                                                                          | Single Race 6 , All Races                |
+| 4\. Select year and month                      |                         | · `Year/Month`                                                                                                                                            | *All* (All Dates)                        |
+| 5\. Select weekday, autopsy and place of death | Weekday                 | · `Weekday`                                                                                                                                               | All Weekdays                             |
+|                                                | Autopsy                 | · `Autopsy`                                                                                                                                               | All values                               |
+|                                                | Place of death          | · `Place of death`                                                                                                                                        | All places                               |
+| 6\. Select cause of death                      | Grouping method         | · `Click a button to select ICD codes by Chapters or by Groups`                                                                                           | Drug/Alcohol Induced Causes              |
+|                                                | Selected codes          | · `Browse or search to find items in the Drug/Alcohol Induced Causes Finder Tool, then highlight the items to use for this request`                       | Alcohol-induced causes                   |
+| 7\. Other options                              |                         | · `Export results`<br>· `Show totals`<br>· `Show Zero values`<br>· `Show supressed values`· <br>· `Precision (decimal places)`<br>· `Data Access Timeout` | TRUE<br>FALSE<br>TRUE<br>TRUE<br>2<br>10 |
+:::
+
+#### 3 - Códigos FIPS de los estados de EEUU
+
+Para garantizar una adecuada estandarización de los datos, se utilizó como tabla maestra el dataset `fips_states` del paquete **tidycensus** [Dataset with FIPS codes for US states and counties](https://search.r-project.org/CRAN/refmans/tidycensus/html/fips_codes.html).
+
+### 01b - Definir el método y la configuración de la ingesta
+
+| Conjunto de datos                                               | Método                                                                                                     | Configuración                                                  |
+|-----------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| 1 - Indicadores de salud relacionados con el consumo de alcohol | Ingesta directa desde origen con `data.table::fread()`                                                     | Opciones por defecto de la función, salvo `encoding = "UTF-8"` |
+| 2 - Tasas de mortalidad relacionadas con el consumo de alcohol  | · Descarga del conjunto de datos crudo con la configuración especificada<br>· Ingesta desde descarga local | `encoding = "UTF-8"`<br> `header = TRUE`<br>`nrow = 306`       |
+| 3 - Códigos FIPS de los estados de EEUU                         | Carga directa con `data()`                                                                                 | Opciones por defecto de la función                             |
+
+### 01c - Crear los *data.frame* de datos crudos
+
+Se crearon los siguientes *data.frame* de datos crudos:
+
+| Objeto                | Fuente                                                                                                     | Descripción                                                                                                                                                                     |
+|-----------------------|------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `rawCdiAlcohol`       | [*Chronic disease indicators (CDI), CDC*, 2023](https://data.cdc.gov/resource/g4ie-h725.csv)               | Evaluación de los indicadores de enfermedades crónicas relacionados con el consumo excesivo de alcohol, ajustados por sexo y edad, durante el periodo 2010-21, por estado y año |
+| `rawMortalityAlcohol` | [Underlying Cause of Death, 2018-2022, Single Race](https://wonder.cdc.gov/wonder/help/ucd-expanded.html#) | Tasa de mortalidad relacionada con alcohol, ajustada por sexo y edad, durante el periodo 2018-22, por estado y año                                                              |
+| `rawFipsCodes`        | Paquete **tidycensus**                                                                                     | Tabla maestra de códigos para estados y condados de EEUU                                                                                                                        |
+
+::: {.callout-note title="1 - Indicadores de salud relacionados con el consumo de alcohol - `rawCdiAlcohol`" collapse="true"}
+```{r}
+# Indicadores de salud relacionados con el consumo de alcohol - `rawCdiAlcohol`
+rawCdiAlcohol <- data.table::fread(
+  file = here::here(
+    "data", "raw", "US_Chronic_Disease_Indicators_CDI_2023_Release_20240716.csv"
+    ),
+  encoding = "UTF-8"
+  ) |> 
+  # Filtrado de indicadores de la dimensión 'Alcohol'
+  dplyr::filter(Topic == "Alcohol") 
+```
+:::
+
+::: {.callout-note title="2 - Tasas de mortalidad relacionadas con el consumo de alcohol - `rawUnderlyingCauseOfDeathAlcohol`" collapse="true"}
+[Documentación del dataset](https://wonder.cdc.gov/wonder/help/ucd-expanded.html#)
+
+```{r}
+#| code-overflow: wrap
+
+# Tasas de mortalidad relacionadas con el consumo de alcohol por sexo y estado- `rawUnderlyingCauseOfDeathAlcohol`
+rawUnderlyingCauseOfDeathAlcohol <- data.table::fread(
+  here::here(
+    'data', 'raw', 'Underlying Cause of Death, 2018-2022, Single Race.txt'
+    ),
+  encoding = "UTF-8",
+  header = TRUE,
+  nrow = 817  # Se ingestan únicamente las observaciones, y se desprecian los comentarios
+) 
+
+```
+:::
+
+::: {.callout-note title="3 - Códigos FIPS de los estados de EEUU `rawFipsCodes`" collapse="true"}
+```{r}
+
+# Códigos FIPS de los estados de EEUU - `fips_codes`
+data("fips_codes", package = "tidycensus")
+rawFipsCodes <- fips_codes # Normalización del nombre del data.frame
+rm(fips_codes)
+```
+:::
+
+### 01d - Validar la fase de ingesta
+
+En la validación de la fase de ingesta se realizaron las siguientes actividades:
+
+-   Verificar la completitud de la ingesta `head()`, `tail()`, `dim()`
+-   Normalizar los nombres de las variables
+-   Comprobar la estructura de los *data.frame* (`str()`)
+-   Características generales del *data.frame*
+
+#### 1 - Validación de `rawCdiAlcohol`
+
+| Dimensión                             | Evaluación                                                                                                                    |
+|---------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| Completitud                           | Ingesta correcta                                                                                                              |
+| Normalización del nombre de variables | No es necesaria                                                                                                               |
+| Estructura del *data.frame*           | Algunas variables deben convertirse a tipo `factor`                                                                           |
+| Resumen del *data.frame*              | Existen algunas variables innecesarias (sin datos, o con todos los valores iguales)<br>Hay valores faltantes dispersos (`NA`) |
+
+::: {.callout-note title="Completitud de la ingesta (`head()`, `tail()`, `dim()`)" collapse="true"}
+La ingesta se ha realizado correctamente, con el número de filas y variables esperado.
+
+```{r}
+# Verificación de que se han ingestado correctamente las primeras filas
+head(rawCdiAlcohol)
+# Verificación de que se han ingestado correctamente las últimas filas
+tail(rawCdiAlcohol)
+# Valoración del número de filas y columnas ingestadas
+dim(rawCdiAlcohol)
+```
+:::
+
+::: {.callout-note title="Normalización de los nombres de las variables" collapse="true"}
+En nuestro *data.frame* las variables del dataset original tenían un nombre normalizado siguiendo el estándar [PascalCase](https://en.wikipedia.org/wiki/Camel_case), por lo que no fue necesario renombrarlas.
+
+```{r}
+#| code-fold: true
+#### Normalización de los nombres de las variables
+(rawVarNamesCdi <- names(rawCdiAlcohol))
+```
+:::
+
+::: {.callout-note title="Estructura del *data.frame* (`str()`)" collapse="true"}
+Deben convertirse algunas variables al tipo `factor`.
+
+```{r}
+#| code-fold: true
+#### Comprobar la estructura de los *data.frame* (`str()`)
+str(rawCdiAlcohol)
+```
+:::
+
+::: {.callout-note title="Resumen del *data.frame* " collapse="true"}
+Deben convertirse algunas variables al tipo `factor` y `numeric`.
+
+-   Existen algunas variables innecesarias (sin datos, o con todos los valores iguales)
+-   Hay valores faltantes dispersos (`NA`)
+
+```{r}
+#| code-fold: true
+#### Explorar las características generales de los datos ingestados
+summary(rawCdiAlcohol)
+```
+:::
+
+#### 2 - Validación de `rawUnderlyingCauseOfDeathAlcohol`
+
+| Dimensión                             | Evaluación                                                                                                       |
+|---------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| Completitud                           | Faltan datos para algunos estados en algunos años                                                                |
+| Normalización del nombre de variables | · Los nombres de las variables del dataset original no están normalizados.<br>· Deben renombrarse las variables. |
+| Estructura del *data.frame*           | · Algunas variables deben convertirse a tipo `factor`<br>· Alguna variable debe convertirse a tipo `numeric`     |
+| Resumen del *data.frame*              | · Debe convertirse a numérico el valor `% of Total Deaths`<br>· Hay valores faltantes dispersos (`NA`)           |
+
+::: {.callout-note title="Completitud de la ingesta (`head()`, `tail()`, `dim()`)" collapse="true"}
+Faltan datos para algunos de los estaos en algunos años.
+
+```{r}
+# Verificación de que se han ingestado correctamente las primeras filas
+head(rawUnderlyingCauseOfDeathAlcohol)
+# Verificación de que se han ingestado correctamente las últimas filas
+tail(rawUnderlyingCauseOfDeathAlcohol)
+# Valoración del número de filas y columnas ingestadas
+dim(rawUnderlyingCauseOfDeathAlcohol)
+
+```
+:::
+
+::: {.callout-note title="Normalización de los nombres de las variables" collapse="true"}
+Los nombres de las variables del dataset original no están normalizados. Deben renombrarse las variables.
+
+```{r}
+#| code-fold: true
+## Guardar los nombres de variable originales
+(rawVarNamesCauseOfDeath <- names(rawUnderlyingCauseOfDeathAlcohol))
+
+```
+:::
+
+::: {.callout-note title="Estructura del *data.frame* (`str()`)" collapse="true"}
+-   Deben convertirse algunas variables al tipo `factor`, y alguna variable debe convertirse a tipo `numeric`.
+
+```{r}
+#| code-fold: true
+#### Comprobar la estructura de los *data.frame* (`str()`)
+str(rawUnderlyingCauseOfDeathAlcohol)
+```
+:::
+
+::: {.callout-note title="Resumen del *data.frame* " collapse="true"}
+-   Debe convertirse a numérico el valor `% of Total Deaths`
+-   Hay valores faltantes dispersos (`NA`)
+
+```{r}
+#| code-fold: true
+#### Explorar las características generales de los datos ingestados
+summary(rawUnderlyingCauseOfDeathAlcohol)
+```
+:::
+
+#### 3 - Validación de `rawFipsCodes`
+
+| Dimensión                             | Evaluación                                           |
+|---------------------------------------|------------------------------------------------------|
+| Completitud                           | Ingesta correcta                                     |
+| Normalización del nombre de variables | Debe convertirse a Pascal Case                       |
+| Estructura del *data.frame*           | Deben convertirse algunas variables al tipo `factor` |
+| Resumen del *data.frame*              | Sin problemas adicionales                            |
+
+::: {.callout-note title="Completitud de la ingesta (`head()`, `tail()`, `dim()`)" collapse="true"}
+No hay problemas con la completitud de la ingesta
+
+```{r}
+# Verificación de que se han ingestado correctamente las primeras filas
+head(rawFipsCodes)
+# Verificación de que se han ingestado correctamente las últimas filas
+tail(rawUnderlyingCauseOfDeathAlcohol)
+# Valoración del número de filas y columnas ingestadas
+dim(rawUnderlyingCauseOfDeathAlcohol)
+```
+:::
+
+::: {.callout-note title="Normalización de los nombres de las variables" collapse="true"}
+Los nombres de las variables del dataset original están en formato [snake_case](https://es.wikipedia.org/wiki/Snake_case). Se convierten a formato Pascal Case, para mantener la coherencia con el resto de dataframes
+
+```{r}
+#| code-fold: true
+## Guardar los nombres de variable originales
+(rawVarNamesrawFipsCodes <- names(rawFipsCodes))
+```
+:::
+
+::: {.callout-note title="Estructura del *data.frame* (`str()`)" collapse="true"}
+-   Deben convertirse algunas variables al tipo `factor`.
+
+```{r}
+#| code-fold: true
+#### Comprobar la estructura de los *data.frame* (`str()`)
+str(rawFipsCodes)
+```
+:::
+
+::: {.callout-note title="Resumen del *data.frame* " collapse="true"}
+Sin hallazgos
+
+```{r}
+#| code-fold: true
+#### Explorar las características generales de los datos ingestados
+summary(rawFipsCodes)
+```
+:::
+
+## Salidas del subproceso
+
+| Objeto                             | Descripción del *data.frame*                                                                           | Filas                                      | Columnas                                   |
+|------------------------------------|--------------------------------------------------------------------------------------------------------|--------------------------------------------|--------------------------------------------|
+| `rawCdiAlcohol`                    | Indicadores de enfermedades crónicas (CDI) del área de interés 'Alcohol', por estado y año (2010-2022) | `r nrow(rawCdiAlcohol)`                    | `r ncol(rawCdiAlcohol)`                    |
+| `rawUnderlyingCauseOfDeathAlcohol` | Tasas de mortalidad por Alcohol, por sexo, estado y año (2018-2022)                                    | `r nrow(rawUnderlyingCauseOfDeathAlcohol)` | `r ncol(rawUnderlyingCauseOfDeathAlcohol)` |
+| `rawFipsCodes`                     | Maestra de códigos de estados y condados de EEUU                                                       | `r nrow(rawFipsCodes)`                     | `r ncol(rawFipsCodes)`                     |
+
+```{r}
+#| output: false
+#| code-fold: true
+
+# Copia de seguridad de los ficheros crudos
+saveRDS(
+  object = rawCdiAlcohol,
+  file = here::here('data', 'raw', 'rawCdiAlcohol.rds')
+)
+saveRDS(
+  object = rawUnderlyingCauseOfDeathAlcohol,
+  file = here::here('data', 'raw', 'rawUnderlyingCauseOfDeathAlcohol.rds')
+)
+saveRDS(
+  object = rawFipsCodes,
+  file = here::here('data', 'raw', 'rawFipsCodes.rds')
+)
+```

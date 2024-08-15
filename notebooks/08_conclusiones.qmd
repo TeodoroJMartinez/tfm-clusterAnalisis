@@ -1,0 +1,14 @@
+---
+author: Teodoro José Martínez Arán
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+## Conclusiones {.unnumbered}
+
+Este estudio ofrece dos modelos de agrupación no jerárquica mediante $k$-means para indicadores de salud relacionados con el consumo de alcohol, que podrían utilizarse como apoyo a técnicas de reducción de la dimensionalidad en el análisis de datasets extensos en este dominio. Deben pro Las limitaciones identificadas en la metodología del estudio lastran la generalización de las conclusiones. Sería interesante profundizar en las características de los estados *outliers*, y en la utilidad de los dos modelos de análisis cluster para utilizarlos en modelos predictivos.

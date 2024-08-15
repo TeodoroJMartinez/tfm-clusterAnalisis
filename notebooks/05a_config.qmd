@@ -1,0 +1,229 @@
+---
+subtitle: "Material y métodos"
+author: Teodoro José Martínez Arán
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+bibliography: grateful-refs.bib
+---
+
+# Subproceso 00 - Configuración del equipo {.unnumbered}
+
+## Descripción del subproceso
+
+Subproceso destinado a establecer una configuración de R y RStudio que garantice la reproductibilidad de los resultados, e instalar los paquetes de R necesarios para el análisis
+
+Incluye las siguientes acciones:
+
+-   00a - Definir una configuración de R y RStudio que garantice la reproductibilidad de los resultados
+-   00b - Instalar los paquetes de R necesarios para el análisis
+
+## Acciones del subproceso
+
+### 00a. Definir una configuración de R y RStudio que garantice la reproductibilidad de los resultados
+
+Para facilitar la reproductibilidad del análisis y la coherencia de los resultados obtenidos en distintos equipos, se han incorporado las siguientes opciones de configuración:
+
+-   Establecer una semilla aleatoria para el análisis: `set.seed = 2024`
+-   Impedir que los números grandes se muestren con notación científica: `scipen = 999`
+
+```{r Configuracion}
+#| code-fold: true
+
+### 00a. Configuración de R y RStudio
+#### Establecer una semilla aleatoria para el análisis
+set.seed(2024)
+
+#### Impedir que los números grandes se muestren con notación científica
+options(scipen = 999)
+```
+
+### 00b. Instalar los paquetes de R necesarios para el análisis
+
+::: {.callout-note title="Referencias de los paquetes utilizados en el análisis" collapse="true"}
+Los paquetes utilizados en el análisis han sido: BiocManager v. 1.30.23 [@BiocManager], cluster v. 2.1.6 [@cluster], clustertend v. 1.7 [@clustertend], corrplot v. 0.92 [@corrplot2021], data.table v. 1.15.4 [@datatable], DataExplorer v. 0.8.3 [@DataExplorer], devtools v. 2.4.5 [@devtools], dlookr v. 0.6.3 [@dlookr], factoextra v. 1.0.7 [@factoextra], FeatureImpCluster v. 0.1.5 [@FeatureImpCluster], flexclust v. 1.4.2 [@flexclust2006a; @flexclust2006c; @flexclust2006d; @flexclust2010b; @flexclust2018e], flextable v. 0.9.6 [@flextable], fpc v. 2.2.12 [@fpc], GGally v. 2.2.1 [@GGally], ggrepel v. 0.9.5 [@ggrepel], ggside v. 0.3.1 [@ggside], ggstatsplot v. 0.12.4 [@ggstatsplot], here v. 1.0.1 [@here], Hmisc v. 5.1.3 [@Hmisc], kableExtra v. 1.4.0 [@kableExtra], mice v. 3.16.0 [@mice], moments v. 0.14.1 [@moments], naniar v. 1.1.0 [@naniar], NbClust v. 3.0.1 [@NbClust], performance v. 0.12.2 [@performance], psych v. 2.4.6.26 [@psych], rmarkdown v. 2.27 [@rmarkdown2018; @rmarkdown2020; @rmarkdown2024], SmartEDA v. 0.3.10 [@SmartEDA], summarytools v. 1.0.1 [@summarytools], tidyverse v. 2.0.0 [@tidyverse].
+:::
+
+Los paquetes de R necesarios para este análisis están recogidos en el objeto `paquetesNecesariosAnalisis`, y han sido los siguientes:
+
+```{r}
+#| code-fold: true
+
+# Instalación de paquetes necesarios para el análisis
+# Listado de paquetes a instalar
+
+## Paquetes de CRAN
+libsCran <- c(
+  'arsenal',     # An Arsenal of 'R' Functions for Large-Scale Statistical Summaries
+  'BiocManager', # Access the Bioconductor Project Package Repository
+  'clustertend', # Check the Clustering Tendency
+  'DataExplorer',# Automate Data Exploration and Treatment
+  'data.table',  # Extension of 'data.frame'
+  'devtools',    # Tools to Make Developing R Packages Easier
+  'dlookr',      # Tools for Data Diagnosis, Exploration, Transformation
+  'dplyr',       # A Grammar of Data Manipulation
+  'factoextra',  # Extract and Visualize the Results of Multivariate Data Analyses
+  'flexclust',   # Flexible Cluster Algorithms
+  'flextable',   # Functions for Tabular Reporting
+  'FeatureImpCluster', # Feature Importance for Partitional Clustering
+  'fpc',         # Flexible Procedures for Clustering
+  'GGally',      # Extension to 'ggplot2'
+  'ggplot2',     # Create Elegant Data Visualisations Using the Grammar of Graphics
+  'ggpubr',      # 'ggplot2' Based Publication Ready Plots
+  'ggside',      # Side Grammar Graphics
+  'ggrepel',     # Automatically Position Non-Overlapping Text Labels with 'ggplot2'
+  'grateful',    # Facilitate Citation of R Packages
+  'here',        # A Simpler Way to Find Your Files
+  'kableExtra',  # Construct Complex Table with 'kable' and Pipe Syntax
+  'mice',        # Multivariate Imputation by Chained Equations
+  'moments',     # Moments, Cumulants, Skewness, Kurtosis and Related Tests
+  'naniar',      # Data Structures, Summaries, and Visualisations for Missing Data
+  'NbClust',     # Determining the Best Number of Clusters in a Data Set
+  'plotly',      # Create Interactive Web Graphics via 'plotly.js'
+  'psych',       # Procedures for Psychological, Psychometric, and Personality Research
+  'rstantools',  # Tools for Developing R Packages Interfacing with 'Stan'
+  'SmartEDA',    # Summarize and Explore the Data
+  'summarytools',# Tools to Quickly and Neatly Summarize Data
+  'tidycensus',  # Load US Census Boundary and Attribute Data as 'tidyverse' and 'sf'-Ready Data Frames
+  'tidyr',       # Tidy Messy Data
+  'tinytex',     # Helper Functions to Install and Maintain TeX Live
+  'usmap',       # US Maps Including Alaska and Hawaii
+  'usmapdata',   # Mapping Data for 'usmap' Package
+  'utils'        # Various Programming Utilities
+  )
+  
+## Paquetes de BioConductor
+libsBioconductor <- c(
+  'graph'
+  )
+  
+## Paquetes en repositorios de Github
+libsGitHub <- c(
+  'tinytex'
+  )
+reposGitHub <- c(
+  'rstudio/tinytex'
+  )
+paquetesGitHub <- data.frame(
+  libsGitHub,
+  reposGitHub
+  )
+  
+# Identificación de los paquetes que ya están instalados
+isInstalledLibCran   <- libsCran   %in% rownames(utils::installed.packages())
+isInstalledLibGitHub <- libsGitHub %in% rownames(utils::installed.packages())
+isInstalledLibBioConductor <-
+  libsBioconductor %in% rownames(utils::installed.packages())
+    
+# Instalación de los paquetes faltantes
+## Paquetes CRAN
+if (any(isInstalledLibCran == F)) {
+  utils::install.packages(libsCran[!isInstalledLibCran])
+  }
+  
+## Paquetes Bioconductor
+if (any(isInstalledLibBioConductor == F)) {
+  BiocManager::install(libsBioconductor[!isInstalledLibBioConductor], ask = F)
+  }
+  
+## Paquetes en repositorios GitHub
+if (any(isInstalledLibGitHub == F)) {
+  sapply(
+    paquetesGitHub$reposGitHub[!isInstalledLibGitHub],
+    devtools::install_github,
+    upgrade = 'ask',
+    build_manual = TRUE,
+    build_vignettes = TRUE
+    )
+  }
+ 
+
+## Elaboración de un data.frame con la lista de paquetes instalados
+### Listado de paquetes gestionados
+libs <- c(libsCran, libsBioconductor, libsGitHub) |> unique()
+libs <- libs[order(libs)]
+  
+### Dataframe de paquetes
+paquetes <- sapply(
+  libs,
+  utils::packageDescription,
+  fields = c(
+    'Package',
+    'Title',
+    'Version',
+    'Author',
+    'Description',
+    'License',
+    'URL',
+    'BugReports',
+    'Depends',
+    'Imports',
+    'Suggests',
+    'Date/Publication'
+    )
+) |>
+as.data.frame()
+  
+paquetesNecesariosAnalisis <- do.call(rbind.data.frame, paquetes)
+
+
+## (OPCIONAL) - Muestra resultado en salida de quarto
+### Eliminamos los saltos de carro que incluyen algunos títulos de paquetes '\n'
+paquetesNecesariosAnalisis$Title <- gsub(
+  pattern = "\n",
+  replacement = " ",
+  x = paquetesNecesariosAnalisis$Title
+)
+
+paquetesNecesariosAnalisis |> 
+  dplyr::select(
+    Title,
+    Version
+    ) |> 
+  kableExtra::kable()
+
+```
+
+```{r}
+#| code-fold: true
+#| output: false
+
+## (OPCIONAL) - Crear una bibliografía de los paquetes de R utilizados
+grateful::cite_packages(
+  out.dir = here::here('notebooks'),
+  out.format = 'Rmd')
+
+```
+
+## Salidas del subproceso
+
+-   El equipo queda correctamente configurado para reproducir los resultados del análisis
+    -   Configuración de R estandarizada
+    -   Paquetes de R necesarios instalados en el equipo
+-   Se documentan los paquetes necesarios para el análisis
+    -   Objeto `paquetesNecesariosAnalisis`
+
+### Limpieza de objetos temporales del subproceso
+
+```{r}
+#| code-fold: true
+
+## Limpieza
+rm(list = c(
+  'isInstalledLibCran',
+  'isInstalledLibGitHub',
+  'isInstalledLibBioConductor',
+  'libs',
+  'libsCran',
+  'libsBioconductor',
+  'libsGitHub',
+  'reposGitHub',
+  'paquetesGitHub',
+  'paquetes'
+  )
+  )
+```

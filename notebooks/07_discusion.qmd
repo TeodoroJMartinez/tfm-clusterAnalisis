@@ -1,0 +1,35 @@
+---
+author: Teodoro José Martínez Arán
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+## Discusión {.unnumbered}
+
+## Limitaciones del estudio
+
+Se han identificado las siguientes limitaciones del estudio, debido a la metodología seguida, que deben tenerse en cuenta a la hora de evaluar los resultados obtenidos:
+
+-   Fase de ingesta:
+    -   Se ingestaron los datos disponibles en las fuentes originales a fecha 13-Ago-2024
+-   Fase limpieza:
+    -   No se analizó la evolución temporal de cada indicador a lo largo del tiempo
+    -   No se analizó el detalle a nivel de condado de los indicadores
+    -   Sólo se analizó el año 2021
+-   Fase de transformación:
+    -   No se ejecutaron técnicas de imputación para los datos faltantes. El análisis omitió las observaciones del dataset que no tenían datos
+    -   No se disponía en el dataset de ninguna variable categórica que permitiera la validación externa de los modelos de 3 y 4 clústeres, por lo que se utilizó una variable instrumental sintética para dicha validación.
+
+## Discusión de los resultados obtenidos del estudio
+
+-   Existe una notable influencia del sexo en los indicadores de salud relacionados con el alcohol, para todos los estados analizados. Esto parece condicionar que los hombres tengan una mayor incidencia y prevalencia de factores deletéreos determinantes de la salud relacionados con el alcohol mayor que las mujeres, y un mayor número de muertes relacionadas con el alcohol. Esto es consistente con lo observado en estudios previos [@white2020].
+-   Algunos estados presentan unos valores para los indicadores anormalmente elevados, algo ya conocido [@cdc2024]. Dichos estados deben ser estudiados en detalle, puesto que pueden aportar información valiosa sobre los factores de riesgo con mayor impacto en el desarrollo de efectos perjudiciales para la salud relacionados con el alcohol .
+-   Los indicadores relacionados con el consumo de alcohol de los datos analizados presentan una tendencia a la agrupación en clústeres, tanto en el conjunto de datos completo como en el recortado (sin *outliers*).
+-   Cuando se utiliza la agrupación no jerárquica por $k$-means, dos de los modelos de agrupación para datos recortados presentan suficiente solidez para ser tomados en consideración: $k=2$, y $k=3$.
+    -   La variable del dataset que más se acerca a la agrupación de modelos con $k=2$ es `Sex`.
+    -   No se ha identificado ninguna variable en el dataset que se solape con la agrupación de $k=3$, por lo que asumimos que esta clusterización captura información no registrada en el conjunto de datos original.

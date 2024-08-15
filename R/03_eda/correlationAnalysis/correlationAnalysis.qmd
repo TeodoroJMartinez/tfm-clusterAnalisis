@@ -1,0 +1,159 @@
+---
+title: "Correlation analysis"
+subtitle: 'Denominación del caso de uso'
+format: html
+toc: true
+toc-depth: 5
+toc-location: left
+number-sections: true
+---
+
+## Descripción del problema {.unnumbered}
+### Contexto (incluido análisis de literatura) {.unnumbered}
+### Pregunta de investigación {.unnumbered}
+
+## 0 Configuración {.unnumbered}
+```{r Configuracion}
+#| message: false
+
+## Configuración global
+source(here::here('config', 'config.R'))
+
+## Configuración del proceso
+source(here::here('config', 'config_correlationAnalysis.R'))
+```
+## Ingesta
+### Ingesta de conjuntos de datos ya creados
+#### Conjuntos de datos de paquetes de R
+```{r ingest data - base}
+source(here::here('R', 'ingest', 'ingest_data_base.R'))
+```
+
+#### Ficheros de Microsoft Excel (`.xls`, `.xlsx`)
+#### Ficheros de texto plano (`.csv`, `.tsv`, ...)
+#### Otros ficheros (SPSS, Stata, Minitab, ...)
+
+### Creación manual de conjuntos de datos
+#### Concatenar - `c()`
+#### Secuenciar - `seq()` y `:`
+#### Repetir - `rep()`
+#### Números aleatorios - Familia de funciones `r----`
+
+### Métricas de calidad en la ingesta de datos
+
+## Limpieza
+### Técnicas de limpieza de datos
+#### Codificación de caracteres
+#### Valores espúreos (filas y columnas)
+#### Valores erróneos
+#### Valores faltantes
+#### Tipo de variable incorrecto
+#### *'Tidy-data'*. Estándar para unos datos limpios y ordenados
+#### Formato corto y formato largo de los datos
+
+### Técnicas de manipulación de datos
+#### Selección de variables
+#### Selección de observaciones
+#### Eliminar filas o columnas
+#### Identificar valores que cumplen una condición
+#### Sustituir unos valores por otros
+#### Ordenar valores dentro de una variable
+#### Unir y separar subconjuntos de datos
+#### Agregar filas y agregar columnas
+
+### Métricas de calidad del dato en la fase de limpieza
+
+## Análisis exploratorio de datos
+### Herramientas para el análisis exploratorio de datos
+#### Vistazo rápido
+#### Técnicas de análisis exploratorio con una línea de código
+#### Análisis estadístico
+##### Estadística descriptiva univariante - Centralización, dispersión, asimetría, tipo de distribución
+##### Estadística descriptiva bivariante - Correlación
+
+### Métricas de calidad en la fase de EDA
+
+## Transformación
+### Herramientas de transformación
+#### Aritmética - Operaciones matemáticas con variables
+#### Funciones matemáticas
+#### Transformación de variables lógicas
+#### Transformación de variables numéricas y enteros
+#### Transformación de variables categóricas
+#### Transformación de factores
+#### Transformación de fechas
+#### Estandarización y normalización de variables
+#### *'Dummificación'* de variables
+
+### Documentación de la transformación - Libros de código
+#### Por qué documentar la transformación de los datos
+#### Herramientas para la documentación automática de la transformación
+
+### Métricas de calidad asociada a la transformación de datos
+
+## Análisis de datos
+### Herramientas analíticas
+#### Estadística inferencial
+#### Regresión lineal simple
+#### Técnicas predictivas
+#### Técnicas de clasificación
+#### Series temporales
+#### Análisis geoespacial
+#### Machine learning
+#### Deep learning
+
+### Métricas de calidad asociadas a la fase de análisis
+
+## Gráficos y tablas
+### Tipos de elementos destinados a la difusión de resultados
+#### Tablas
+#### Gráficos
+##### Correlación - *Scatterplot*
+```{r}
+### Paso 1 - Crear el objeto ggplot2
+  g <- ggplot2::ggplot(
+    data = iris,
+    mapping = ggplot2::aes(
+      x = Petal.Length,
+      y = Petal.Width,
+      ### OPCIONAL - Se puede agrupar por los niveles de un factor
+      color = Species
+    )
+  ) +
+
+    ### Paso 2 - Añadir la geometría `ggplot2::geom_point()`
+    ggplot2::geom_point() +
+
+    ### Paso 3 - Personalizar las etiquetas de los ejes
+    ggplot2::labs(
+      title = 'Correlación entre la longitud y la anchura de pétalos',
+      subtitle = 'Dataset `iris`. Estratificación por especie',
+      x = 'Petal.Length',
+      y = 'Petal.Width',
+      color = 'Species'
+    ) +
+
+    ### Paso 4 - Añadir la estética `ggplot2::geom_smooth()`
+    ggplot2::geom_smooth(
+      method = 'rlm',
+      alpha = 0.1,
+
+      ### Paso 5 - Personalizar el color del intervalo de confianza
+      ggplot2::aes(fill = Species)
+    )
+
+  g
+```
+
+
+#### Mapas
+
+### Métricas de calidad en los elementos de difusión de resultados
+
+## Informes
+### Tipos de informes
+#### Creación de informes estáticos (.pdf)
+#### Creación de informes para web (.html)
+#### Creación de páginas web interactivas (shiny)
+
+### Métricas de calidad del dato asociados a los informes

@@ -1,0 +1,58 @@
+---
+author: Teodoro José Martínez Arán
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+engine: knitr
+---
+
+# Resumen {.unnumbered}
+
+## Justificación del análisis
+
+El uso nocivo del alcohol es una de las causas de mortalidad evitable más importantes a nivel mundial. EEUU presenta una de las tasas de mortalidad relacionadas con alcohol más altas del mundo. Comprender los determinantes de salud que condicionan los valores de estos indicadores puede permitir el desarrollo de políticas de salud pública más efectivas, enfocadas a modificar los principales factores de riesgo.
+
+## Metodología utilizada
+
+### 00. Configuración
+
+En el análisis se utilizó el software **`r R.version$version.string`**. Se generaron scripts de configuración e instalación del entorno de análisis para facilitar la reproductibilidad.
+
+### 01. Ingesta
+
+Se analizaron los Indicadores de salud relacionados con el consumo de alcohol ([U.S. Chronic Disease Indicators (CDI), 2023 Release](https://data.cdc.gov/Chronic-Disease-Indicators/U-S-Chronic-Disease-Indicators-CDI-2023-Release/g4ie-h725/about_data)), y las tasas de mortalidad relacionadas con el consumo de alcohol ([U.S. Underlying Cause of Death, 2018-2022, Single Race](https://wonder.cdc.gov/ucd-icd10-expanded.html)), para el año 2021.
+
+### 02. Limpieza
+
+Se identificó la información sucia, incorrecta, incompleta, imprecisa, irrelevante o incómoda y se reingestó, modificó, reemplazó o borró dicha información de acuerdo a la necesidad.
+
+### 03. Análisis exploratorio de datos
+
+Se evaluó una visión general de los *data.frame*, se exploraron las variables categóricas (*Fisher y* $\chi^2$), las variables numéricas (*Estadísticos descriptivos*), las distribuciones (*test de sesgo y kurtosis*), la normalidad (*QQ-plots y Shapiro-Wilk*), se compararon grupos (*Boxplots, test no-paramétricos*), se exploraron correlaciones, se realizó una modelización exploratoria (*Modelos lineales y no-lineales*) y se exploraron `NA`s y outliers.
+
+### 04. Transformaciones de datos
+
+Se crearon dos subconjuntos de datos, con o y sin outliers, para valorar el impacto de los mismos en la clasificación, y se estandarizaron los datos numéricos para reducir el impacto de la diferencia de magnitud de las distintas variables sobre las técnicas de agrupación.
+
+### 05. Análisis
+
+Se generaron varios análisis cluster no jerárquicos con $k$-means, para investigar patrones de agrupación en los indicadores relacionados con el consumo de alcohol en EEUU durante el año 2021, por sexo, y se evaluó la adecuación, calidad interna y validez externa, así como las características definitorias de cada uno de los clusters, en cada uno de los modelos generados.
+
+## Interpretación de resultados
+
+Se identificaron 2 modelos cluster de interés:
+
+-   Un modelo con $k=2$ clusters, para datos recortados, que sugiere la correlación positiva entre el sexo (masculino) y valores altos en los indicadores relacionados con el consumo de alcohol.
+-   Un modelo con $k=3$ clusters, para datos recortados, que no se relaciona claramente con ninguna variable del conjunto de datos, y que sugiere la existencia de tres grupos de estados en los que, además del sexo, existe una cierta influencia del número de grandes bebedores en un estado para el valor el resto de los indicadores relacionados con el consumo de alcohol.
+
+## Conclusiones y recomendaciones
+
+Los valores de los indicadores relacionados con el consumo de alcohol presentan características comunes que los hacen candidatos a los estudios de agrupación. Las intervenciones de salud pública destinadas a reducir el daño derivado del consumo de alcohol deben contemplar acciones específicas dirigidas a cada uno de los sexos. Existen factores no identificados en el dataset que podrían estar condicionando los valores de los indicadores relacionados con el consumo del alcohol. El presente análisis cluster podría utilizarse para herramienta para la estratificación del muestreo de futuros estudios destinados a evaluar las características diferenciales entre los grupos que no se han podido identificar.
+
+## Palabras clave
+
+Determinantes de la salud, mortalidad relacionada con el alcohol, análisis cluster no jerárquico, $k$-means, EEUU.

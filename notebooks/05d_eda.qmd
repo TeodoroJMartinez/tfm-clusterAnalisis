@@ -1,0 +1,3206 @@
+---
+subtitle: "Material y métodos"
+author: Teodoro José Martínez Arán
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+# Subproceso 03 - Análisis exploratorio de datos *(EDA)* {.unnumbered}
+
+## Descripción del subproceso
+
+Proceso de investigación del conjunto de datos para descubrir patrones y anomalías, y establecer hipótesis basadas en la comprensión del dataset.
+
+```{r}
+#| code-fold: true
+#| output: false
+
+# 00a. Configuración de R y RStudio
+## Establecer una semilla aleatoria para el análisis
+set.seed(2024)
+
+## Impedir que los números grandes se muestren con notación científica
+options(scipen = 999)
+
+# Carga de datos
+data <- readRDS(
+  file = here::here('data', 'lab', 'data.rds')
+)
+data_overall <- readRDS(
+  file = here::here('data', 'lab', 'data_overall.rds')
+)
+data_gender <- readRDS(
+  file = here::here('data', 'lab', 'data_gender.rds')
+)
+```
+
+El proceso ejecuta las siguientes acciones [@yuzardatascience2021]:
+
+-   03a - Visión general del *data.frame*
+-   03b - Explorar variables categóricas (*Fisher and chi-square*)
+-   03c - Explorar variables numéricas (*Descriptive statistics*)
+-   03d - Explorar distribuciones (*skewness and kurtosis tests*)
+-   03e - Explorar normalidad (*QQ-plots and Shapiro-Wilk*)
+-   03f - Comparar grupos (*Boxplots, non-parametric tests*)
+-   03g - Explorar correlaciones (*Several methods*)
+-   03h - Explorar datos (*Linear and non-linear models*)
+-   03i - Explorar NAs y outliers (*and imputation*)
+
+## Acciones del proceso
+
+### 03a - Visión general del *data.frame*: `summarytools::dfSummary()`
+
+Se realizó un resumen de cada *data.frame* con los siguientes elementos:
+
+-   Nombre de variables y tipos,
+-   Etiquetas (si existían)
+-   Niveles de los factores,
+-   Frecuencias y / o estadísticos de resumen numéricos,
+-   Gráficos de barras / histogramas, y
+-   Conteos y proporciones de observaciones válidas / faltantes.
+
+::: {.callout-note title="1- Objeto `data`" collapse="true"}
+#### Objeto `data`
+
+```{r}
+#| code-fold: true
+
+data |> 
+  summarytools::dfSummary() 
+```
+:::
+
+::: {.callout-note title="2- Objeto `data_gender`" collapse="true"}
+#### Objeto `data_gender`
+
+```{r}
+#| code-fold: true
+
+data_gender |> 
+  summarytools::dfSummary() 
+```
+:::
+
+::: {.callout-note title="3- Objeto `data_overall`" collapse="true"}
+#### Objeto `data_overall`
+
+```{r}
+#| code-fold: true
+
+data_overall |> 
+  summarytools::dfSummary() 
+```
+:::
+
+### 03b - Explorar variables categóricas: `SmartEDA::ExpCatViz()`
+
+En el análisis se revisó para cada variable categórica:
+
+-   Frecuencia relativa de cada nivel de la variable respecto al total de observaciones
+-   La frecuencia relativa de datos faltantes, si existían
+
+::: {.callout-note title="1- Objeto `data`" collapse="true"}
+#### Objeto `data`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+tmp <- data[,c("State", "Sex")] |> 
+  SmartEDA::ExpCatViz(
+    clim = 60
+  )
+ggplot2::ggsave(
+  plot = tmp[[1]],
+  here::here('notebooks', 'images', 'eda_data_03b_01_sex.jpg')
+)
+ggplot2::ggsave(
+  plot = tmp[[2]],
+  here::here('notebooks', 'images', 'eda_data_03b_02_state.jpg')
+)
+rm(tmp)
+```
+
+Existen 2 variables categóricas: `Sex` y `State`, con la siguiente distribución de niveles entre las observaciones:
+
+![](images/eda_data_03b_01_sex.jpg)
+
+![](images/eda_data_03b_02_state.jpg)
+:::
+
+::: {.callout-note title="2- Objeto `data_gender`" collapse="true"}
+#### Objeto `data_gender`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+tmp <- data_gender[,c("State", "Sex")] |> 
+  SmartEDA::ExpCatViz(
+    clim = 60
+  )
+
+ggplot2::ggsave(
+  plot = tmp[[1]],
+  here::here('notebooks', 'images', 'eda_data_gender_03b_01_sex.jpg')
+)
+ggplot2::ggsave(
+  plot = tmp[[2]],
+  here::here('notebooks', 'images', 'eda_data_gender_03b_02_state.jpg')
+)
+rm(tmp)
+```
+
+![](images/eda_data_gender_03b_01_sex.jpg)
+
+![](images/eda_data_gender_03b_02_state.jpg)
+:::
+
+::: {.callout-note title="3- Objeto `data_overall`" collapse="true"}
+#### Objeto `data_overall`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+tmp <- data_overall[,c("State")] |> 
+  SmartEDA::ExpCatViz(
+    clim = 60
+  )
+
+ggplot2::ggsave(
+  plot = tmp[[1]],
+  here::here('notebooks', 'images', 'eda_data_overall_03b_01_state.jpg')
+)
+rm(tmp)
+```
+
+![](images/eda_data_overall_03b_01_state.jpg)
+:::
+
+### 03c - Explorar variables numéricas (*Estadística descriptiva*): `SmartEDA::ExpNumStat()`
+
+Para las variables numéricas de cada *data.frame* se exploraron los siguientes aspectos:
+
+-   Número de variables (columnas) y de observaciones (filas)
+-   Número y porcentaje de valores faltantes (`NA`)
+-   Valoración de la escala de magnitud de cada variable, y comparación relativa entre las varaibles
+-   Evaluación del sesgo y la kurtosis
+-   Análisis básico de *outliers*
+
+::: {.callout-note title="1- Objeto `data`" collapse="true"}
+#### Objeto `data`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+smartEda_data <- SmartEDA::ExpNumStat(
+  data,
+  # Qnt = c(.25, .5, 0.75),
+  Outlier = TRUE
+  ) 
+smartEda_data
+
+tmp <- smartEda_data |> 
+  flextable::flextable()
+
+tmp <- flextable::autofit(tmp)
+flextable::save_as_image(
+  x = tmp, 
+  path = here::here("notebooks", "images","eda_data_03c.png")
+  )
+
+rm(tmp)
+```
+
+Respecto a las variables numéricas del *data.frame*:
+
+-   Existen `r nrow(smartEda_data)` variables numéricas, con `r max(smartEda_data$TN)` observaciones en total
+-   Existen valores faltantes `NA` en todas las variables, con un rango de valores faltantes entre el `r min(smartEda_data$Per_of_Missing)`% y el `r max(smartEda_data$Per_of_Missing)`%
+-   Las variables tienen una escala de magnitud muy diferente entre sí
+-   La mitad de las variables están más o menos centradas, y la otra mitad sesgadas. Sólo una de las variables tiene una kurtosis similar a la de la distribución normal. Cuatro de las variables son más achatadas, y tres más picudas.
+-   Algunas variables tienen bastantes *outliers*. Las más afectadas son `AgeAdjustedDeathRate`, `Deaths`, `PercentageOfTotalDeaths` y `Population`.
+:::
+
+::: {.callout-note title="2- Objeto `data_gender`" collapse="true"}
+#### Objeto `data_gender`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+smartEda_data_gender <- SmartEDA::ExpNumStat(
+  data_gender,
+  # Qnt = c(.25, .5, 0.75),
+  Outlier = TRUE
+  ) 
+smartEda_data_gender
+
+tmp <- smartEda_data_gender |>  
+  flextable::flextable()
+
+tmp <- flextable::autofit(tmp)
+flextable::save_as_image(
+  x = tmp, 
+  path = here::here("notebooks", "images","eda_data_gender_03c.png")
+  )
+
+rm(tmp)
+```
+
+Respecto a las variables numéricas del *data.frame*:
+
+-   Existen `r nrow(smartEda_data_gender)` variables numéricas, con `r max(smartEda_data_gender$TN)` observaciones en total
+-   Existen valores faltantes `NA` en cinco variables, con un rango de valores faltantes entre el `r min(smartEda_data_gender$Per_of_Missing)`% y el `r max(smartEda_data_gender$Per_of_Missing)`%
+-   Las variables tienen una escala de magnitud muy diferente entre sí
+-   La mitad de las variables están más o menos centradas, y la otra mitad sesgadas. Sólo una de las variables tiene una kurtosis similar a la de la distribución normal. Cuatro de las variables son más achatadas, y tres más picudas.
+-   Las variables con mayor número de *outliers* son `AgeAdjustedDeathRate`, `Deaths`, `PercentageOfTotalDeaths` y `Population`.
+:::
+
+::: {.callout-note title="3- Objeto `data_overall`" collapse="true"}
+#### Objeto `data_overall`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+smartEda_data_overall <- SmartEDA::ExpNumStat(
+  data_overall,
+  # Qnt = c(.25, .5, 0.75),
+  Outlier = TRUE
+  ) 
+smartEda_data_overall
+
+tmp <- smartEda_data_overall |>  
+  flextable::flextable()
+
+tmp <- flextable::autofit(tmp)
+flextable::save_as_image(
+  x = tmp, 
+  path = here::here("notebooks", "images","eda_data_overall_03c.png")
+  )
+
+rm(tmp)
+```
+
+Respecto a las variables numéricas del *data.frame*:
+
+-   Existen `r nrow(smartEda_data_overall)` variables numéricas, con `r max(smartEda_data_overall$TN)` observaciones en total
+-   Existen valores faltantes `NA` en cuatro variables, con un rango de valores faltantes entre el `r min(smartEda_data_overall$Per_of_Missing)`% y el `r max(smartEda_data_overall$Per_of_Missing)`%
+-   Las variables tienen una escala de magnitud muy diferente entre sí
+-   La mitad de las variables están más o menos centradas, y la otra mitad sesgadas. Sólo una de las variables tiene una kurtosis similar a la de la distribución normal. Cuatro de las variables son más achatadas, y tres más picudas.
+-   Las variables con mayor número de *outliers* son `AgeAdjustedDeathRate`, `Deaths`, `PercentageOfTotalDeaths` y `Population`.
+:::
+
+### 03d - Explorar distribuciones (*skewness and kurtosis tests*)
+
+Se evaluó la distribución de probabilidad de las variables numéricas. Para ello, se utilizaron las siguientes técnicas:
+
+-   03da - Visualización de las distribuciones (histograma y función de densidad)
+-   03db - Test de hipótesis de la centralidad (kurtosis y sesgo)
+
+Cuando ambos test son no significativos, la variable puede seguir una distribución aproximadamente normal.
+
+::: {.callout-note title="1- Objeto `data`" collapse="true"}
+#### Objeto `data`
+
+::: {.callout-caution title="03da - Visualización de las distribuciones" collapse="true"}
+Se utilizaron dos tipos de gráfico para evaluar la distribución de las variables aleatorias numéricas:
+
+-   Histogramas
+-   Funciones de densidad
+
+##### 03da - Visualización de las distribuciones (histograma y función de densidad)
+
+###### Gráfico - histogramas
+
+La función `DataExplorer::plot_histogram()` crea histogramas para las variables de clase `numeric` o `integer` de un dataset.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+data |> 
+  DataExplorer::plot_histogram(
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03da_histograma.jpg')
+)
+```
+
+![](images/eda_data_03da_histograma.jpg)
+
+###### Gráfico - Función de densidad de probabilidad
+
+La función `DataExplorer::plot_density()` dibuja la función de densidad de probabilidad para las variables de clase `numeric` o `integer` de un dataset.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+data |> 
+  DataExplorer::plot_density(
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03db_densidad.jpg')
+)
+```
+
+![](images/eda_data_03db_densidad.jpg)
+:::
+
+::: {.callout-caution title="03db - Test de hipótesis de la centralidad - Kurtosis y Sesgo (*skewness*)" collapse="true"}
+##### 03db - Test de hipótesis de la centralidad (kurtosis y sesgo)
+
+Los test de hipótesis de centralidad (Kurtosis y sesgo) orientan para saber qué variables podrían seguir una distribución normal. Se utilizan dos test:
+
+-   Test de hipótesis de la kurtosis (Anscombe-Glynn)
+-   Test de hipótesis del sesgo (D'Agostino)
+
+La hipótesis nula de los dos test asumen que la variable numérica evaluada sigue una distribución con un sesgo (o una kurtosis) similar a la de una distribución normal.
+
+::: {.callout-tip title="Test de hipótesis de la kurtosis (Anscombe-Glynn)" collapse="true" icon="false"}
+###### Test de hipótesis de la kurtosis - Anscombe-Glynn
+
+Contrasta dos hipótesis:
+
+-   Hipótesis nula - La distribución tiene una kurtosis igual a 3 (como una normal)
+-   Hipótesis alternativa - La distribución no tiene una kurtosis igual a 3
+
+Resultados:
+
+-   Para las variables `Deaths`, `Population`, `AgeAdjustedDeathRate`, `PercentageOfTotalDeaths` y `BingeDrinkingIntensityAdults` el $p$-valor del test de Anscombe-Glynn es $< 0.05$, por lo que rechazamos la hipótesis nula y aceptamos la alternativa, asumiendo que la distribución tiene una curtosis diferente de 3 (distribución normal), por lo que no están distribuidas normalmente.
+-   Para las variables `HeavyDrinkingAdults`, `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults` el $p$-valor del test de Anscombe-Glynn es $> 0.05$, por lo que no podemos rechazar la hipótesis nula de que la variable tiene curtosis igual a 3 (distribución normal), por lo que pueden estar distribuidas normalmente.
+
+```{r}
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable Deaths
+data$Deaths |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable Population
+data$Population |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable AgeAdjustedDeathRate
+data$AgeAdjustedDeathRate |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable PercentageOfTotalDeaths
+data$PercentageOfTotalDeaths |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable HeavyDrinkingAdults
+data$HeavyDrinkingAdults |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable BingeDrinkingFrecuencyAdults
+data$BingeDrinkingFrecuencyAdults |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable BingeDrinkingIntensityAdults
+data$BingeDrinkingIntensityAdults |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable BingeDrinkingPrevalenceAdults
+data$BingeDrinkingPrevalenceAdults |> 
+ moments::anscombe.test()
+```
+:::
+
+::: {.callout-tip title="Test de hipótesis de sesgo (D'Agostino)" collapse="true" icon="false"}
+###### Test de hipótesis de sesgo - D'Agostino
+
+Contrasta dos hipótesis:
+
+-   Hipótesis nula - La distribución no está sesgada (como una distribución normal)
+-   Hipótesis alternativa - La distribución está sesgada
+
+Resultados:
+
+-   Para las variables `Deaths`, `Population`, `AgeAdjustedDeathRate` y `PercentageOfTotalDeaths` el $p$-valor del test D'Agostino es $< 0.05$, por lo que rechazamos la hipótesis nula y aceptamos la alternativa, asumiendo que la distribución está sesgada significativamente, y no está distribuida normalmente; es posible que existan outliers.
+-   Para `HeavyDrinkingAdults`, `BingeDrinkingFrecuencyAdults`, `BingeDrinkingIntensityAdults` y `BingeDrinkingPrevalenceAdults` el $p$-valor del test D'Agostino es $> 0.05$, por lo que no podemos rechazar la hipótesis nula y afirmar que exista sesgo.
+
+```{r}
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable Deaths
+data$Deaths |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable Population
+data$Population |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable AgeAdjustedDeathRate
+data$AgeAdjustedDeathRate |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable PercentageOfTotalDeaths
+data$PercentageOfTotalDeaths |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable HeavyDrinkingAdults
+data$HeavyDrinkingAdults |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable BingeDrinkingFrecuencyAdults
+data$BingeDrinkingFrecuencyAdults |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable BingeDrinkingIntensityAdults
+data$BingeDrinkingIntensityAdults |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable BingeDrinkingPrevalenceAdults
+data$BingeDrinkingPrevalenceAdults |> 
+ moments::agostino.test()
+```
+:::
+
+Los resultados obtenidos al aplicar los test a las variables numéricas fueron los siguientes:
+
+| Variable                        | Test kurtosis<br>Anscombe-Glynn | Test sesgo<br>D'Agostino |
+|---------------------------------|---------------------------------|--------------------------|
+| `Deaths`                        | $< 0.05$                        | $< 0.05$                 |
+| `Population`                    | $< 0.05$                        | $< 0.05$                 |
+| `AgeAdjustedDeathRate`          | $< 0.05$                        | $< 0.05$                 |
+| `PercentageOfTotalDeaths`       | $< 0.05$                        | $< 0.05$                 |
+| `HeavyDrinkingAdults`           | No significativo                | No significativo         |
+| `BingeDrinkingFrecuencyAdults`  | No significativo                | No significativo         |
+| `BingeDrinkingIntensityAdults`  | $< 0.05$                        | No significativo         |
+| `BingeDrinkingPrevalenceAdults` | No significativo                | No significativo         |
+:::
+:::
+
+::: {.callout-note title="2- Objeto `data_gender`" collapse="true"}
+#### Objeto `data_gender`
+
+::: {.callout-caution title="03da - Visualización de las distribuciones" collapse="true"}
+Se utilizaron dos tipos de gráfico para evaluar la distribución de las variables aleatorias numéricas de nuestra muestra:
+
+-   Histogramas
+-   Funciones de densidad
+
+##### 03da - Visualización de las distribuciones (histograma y función de densidad)
+
+###### Gráfico - histogramas
+
+La función `DataExplorer::plot_histogram()` crea histogramas para las variables de clase `numeric` o `integer` de un data_overallset.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+data_gender |> 
+  DataExplorer::plot_histogram(
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+    )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03da_histograma.jpg')
+)
+```
+
+![](images/eda_data_gender_03da_histograma.jpg)
+
+###### Gráfico - Función de densidad de probabilidad
+
+La función `data_genderExplorer::plot_density()` dibuja la función de densidad de probabilidad para las variables de clase `numeric` o `integer` de un data_genderset.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+data_gender |> 
+  DataExplorer::plot_density(
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+    )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03db_densidad.jpg')
+)
+```
+
+![](images/eda_data_gender_03db_densidad.jpg)
+:::
+
+::: {.callout-caution title="03db - Test de hipótesis de la centralidad - Kurtosis y Sesgo (*skewness*)" collapse="true"}
+##### 03db - Test de hipótesis de la centralidad (kurtosis y sesgo)
+
+Los test de hipótesis de centralidad (Kurtosis y sesgo) orientan para saber qué variables podrían seguir una distribución normal. Se utilizan dos test:
+
+-   Test de hipótesis de la kurtosis (Anscombe-Glynn)
+-   Test de hipótesis del sesgo (D'Agostino)
+
+La hipótesis nula de los dos test asumen que la variable numérica evaluada sigue una distribución con un sesgo (o una kurtosis) similar a la de una distribución normal.
+
+::: {.callout-tip title="Test de hipótesis de la kurtosis (Anscombe-Glynn)" collapse="true" icon="false"}
+###### Test de hipótesis de la kurtosis - Anscombe-Glynn
+
+Contrasta dos hipótesis:
+
+-   Hipótesis nula - La distribución tiene una kurtosis igual a 3 (como una normal)
+-   Hipótesis alternativa - La distribución no tiene una kurtosis igual a 3
+
+Resultados:
+
+-   Para las variables `Deaths`, `Population`, `AgeAdjustedDeathRate`, `PercentageOfTotalDeaths` y `BingeDrinkingIntensityAdults` el $p$-valor del test de Anscombe-Glynn es $< 0.05$, por lo que rechazamos la hipótesis nula y aceptamos la alternativa, asumiendo que la distribución tiene una curtosis diferente de 3 (distribución normal), por lo que no están distribuidas normalmente.
+-   Para las variables `HeavyDrinkingAdults`, `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults` el $p$-valor del test de Anscombe-Glynn es $> 0.05$, por lo que no podemos rechazar la hipótesis nula de que la variable tiene curtosis igual a 3 (distribución normal), por lo que pueden estar distribuidas normalmente.
+
+```{r}
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable Deaths
+data_gender$Deaths |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable Population
+data_gender$Population |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable AgeAdjustedDeathRate
+data_gender$AgeAdjustedDeathRate |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable PercentageOfTotalDeaths
+data_gender$PercentageOfTotalDeaths |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable HeavyDrinkingAdults
+data_gender$HeavyDrinkingAdults |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable BingeDrinkingFrecuencyAdults
+data_gender$BingeDrinkingFrecuencyAdults |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable BingeDrinkingIntensityAdults
+data_gender$BingeDrinkingIntensityAdults |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable BingeDrinkingPrevalenceAdults
+data_gender$BingeDrinkingPrevalenceAdults |> 
+ moments::anscombe.test()
+```
+:::
+
+::: {.callout-tip title="Test de hipótesis de sesgo (D'Agostino)" collapse="true" icon="false"}
+###### Test de hipótesis de sesgo - D'Agostino
+
+Contrasta dos hipótesis:
+
+-   Hipótesis nula - La distribución no está sesgada (como una distribución normal)
+-   Hipótesis alternativa - La distribución está sesgada
+
+Resultados:
+
+-   Para las variables `Deaths`, `Population`, `AgeAdjustedDeathRate` y `PercentageOfTotalDeaths` el $p$-valor del test D'Agostino es $< 0.05$, por lo que rechazamos la hipótesis nula y aceptamos la alternativa, asumiendo que la distribución está sesgada significativamente, y no está distribuida normalmente; es posible que existan outliers.
+-   Para `HeavyDrinkingAdults`, `BingeDrinkingFrecuencyAdults`, `BingeDrinkingIntensityAdults` y `BingeDrinkingPrevalenceAdults` el $p$-valor del test D'Agostino es $> 0.05$, por lo que no podemos rechazar la hipótesis nula y afirmar que exista sesgo.
+
+```{r}
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable Deaths
+data_gender$Deaths |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable Population
+data_gender$Population |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable AgeAdjustedDeathRate
+data_gender$AgeAdjustedDeathRate |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable PercentageOfTotalDeaths
+data_gender$PercentageOfTotalDeaths |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable HeavyDrinkingAdults
+data_gender$HeavyDrinkingAdults |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable BingeDrinkingFrecuencyAdults
+data_gender$BingeDrinkingFrecuencyAdults |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable BingeDrinkingIntensityAdults
+data_gender$BingeDrinkingIntensityAdults |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable BingeDrinkingPrevalenceAdults
+data_gender$BingeDrinkingPrevalenceAdults |> 
+ moments::agostino.test()
+```
+:::
+
+Los resultados obtenidos al aplicar los test a las variables numéricas fueron los siguientes:
+
+| Variable                        | Test kurtosis<br>Anscombe-Glynn | Test sesgo<br>D'Agostino |
+|---------------------------------|---------------------------------|--------------------------|
+| `Deaths`                        | $< 0.05$                        | $< 0.05$                 |
+| `Population`                    | $< 0.05$                        | $< 0.05$                 |
+| `AgeAdjustedDeathRate`          | $< 0.05$                        | $< 0.05$                 |
+| `PercentageOfTotalDeaths`       | $< 0.05$                        | $< 0.05$                 |
+| `HeavyDrinkingAdults`           | $< 0.05$                        | No significativo         |
+| `BingeDrinkingFrecuencyAdults`  | No significativo                | No significativo         |
+| `BingeDrinkingIntensityAdults`  | $< 0.05$                        | No significativo         |
+| `BingeDrinkingPrevalenceAdults` | $< 0.05$                        | No significativo         |
+:::
+:::
+
+::: {.callout-note title="3- Objeto `data_overall`" collapse="true"}
+#### Objeto `data_overall`
+
+::: {.callout-caution title="03da - Visualización de las distribuciones" collapse="true"}
+Se utilizaron dos tipos de gráfico para evaluar la distribución de las variables aleatorias numéricas de nuestra muestra:
+
+-   Histogramas
+-   Funciones de densidad
+
+##### 03da - Visualización de las distribuciones (histograma y función de densidad)
+
+###### Gráfico - histogramas
+
+La función `DataExplorer::plot_histogram()` crea histogramas para las variables de clase `numeric` o `integer` de un dataset.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+data_overall |> 
+  DataExplorer::plot_histogram(
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_overall_03da_histograma.jpg')
+)
+```
+
+![](images/eda_data_overall_03da_histograma.jpg)
+
+###### Gráfico - Función de densidad de probabilidad
+
+La función `data_genderExplorer::plot_density()` dibuja la función de densidad de probabilidad para las variables de clase `numeric` o `integer` de un dataset.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+data_overall |> 
+  DataExplorer::plot_density(
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+    )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_overall_03db_densidad.jpg')
+)
+```
+
+![](images/eda_data_gender_03db_densidad.jpg)
+:::
+
+::: {.callout-caution title="03db - Test de hipótesis de la centralidad - Kurtosis y Sesgo (*skewness*)" collapse="true"}
+##### 03db - Test de hipótesis de la centralidad (kurtosis y sesgo)
+
+Los test de hipótesis de centralidad (Kurtosis y sesgo) orientan para saber qué variables podrían seguir una distribución normal. Se utilizan dos test:
+
+-   Test de hipótesis de la kurtosis (Anscombe-Glynn)
+-   Test de hipótesis del sesgo (D'Agostino)
+
+La hipótesis nula de los dos test asumen que la variable numérica evaluada sigue una distribución con un sesgo (o una kurtosis) similar a la de una distribución normal.
+
+::: {.callout-tip title="Test de hipótesis de la kurtosis (Anscombe-Glynn)" collapse="true" icon="false"}
+###### Test de hipótesis de la kurtosis - Anscombe-Glynn
+
+Contrasta dos hipótesis:
+
+-   Hipótesis nula - La distribución tiene una kurtosis igual a 3 (como una normal)
+-   Hipótesis alternativa - La distribución no tiene una kurtosis igual a 3
+
+Resultados:
+
+-   Para las variables `Deaths`, `Population`, `AgeAdjustedDeathRate`, `PercentageOfTotalDeaths` y `BingeDrinkingIntensityAdults` el $p$-valor del test de Anscombe-Glynn es $< 0.05$, por lo que rechazamos la hipótesis nula y aceptamos la alternativa, asumiendo que la distribución tiene una curtosis diferente de 3 (distribución normal), por lo que no están distribuidas normalmente.
+-   Para las variables `HeavyDrinkingAdults`, `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults` el $p$-valor del test de Anscombe-Glynn es $> 0.05$, por lo que no podemos rechazar la hipótesis nula de que la variable tiene curtosis igual a 3 (distribución normal), por lo que pueden estar distribuidas normalmente.
+
+```{r}
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable Deaths
+data_overall$Deaths |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable Population
+data_overall$Population |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable AgeAdjustedDeathRate
+data_overall$AgeAdjustedDeathRate |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable PercentageOfTotalDeaths
+data_overall$PercentageOfTotalDeaths |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable HeavyDrinkingAdults
+data_overall$HeavyDrinkingAdults |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable BingeDrinkingFrecuencyAdults
+data_overall$BingeDrinkingFrecuencyAdults |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable BingeDrinkingIntensityAdults
+data_overall$BingeDrinkingIntensityAdults |> 
+ moments::anscombe.test()
+
+## Test de hipótesis de la kurtosis (Anscombe-Glynn)
+### Variable BingeDrinkingPrevalenceAdults
+data_overall$BingeDrinkingPrevalenceAdults |> 
+ moments::anscombe.test()
+```
+:::
+
+::: {.callout-tip title="Test de hipótesis de sesgo (D'Agostino)" collapse="true" icon="false"}
+###### Test de hipótesis de sesgo - D'Agostino
+
+Contrasta dos hipótesis:
+
+-   Hipótesis nula - La distribución no está sesgada (como una distribución normal)
+-   Hipótesis alternativa - La distribución está sesgada
+
+Resultados:
+
+-   Para las variables `Deaths`, `Population`, `AgeAdjustedDeathRate` y `PercentageOfTotalDeaths` el $p$-valor del test D'Agostino es $< 0.05$, por lo que rechazamos la hipótesis nula y aceptamos la alternativa, asumiendo que la distribución está sesgada significativamente, y no está distribuida normalmente; es posible que existan outliers.
+-   Para `HeavyDrinkingAdults`, `BingeDrinkingFrecuencyAdults`, `BingeDrinkingIntensityAdults` y `BingeDrinkingPrevalenceAdults` el $p$-valor del test D'Agostino es $> 0.05$, por lo que no podemos rechazar la hipótesis nula y afirmar que exista sesgo.
+
+```{r}
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable Deaths
+data_overall$Deaths |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable Population
+data_overall$Population |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable AgeAdjustedDeathRate
+data_overall$AgeAdjustedDeathRate |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable PercentageOfTotalDeaths
+data_overall$PercentageOfTotalDeaths |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable HeavyDrinkingAdults
+data_overall$HeavyDrinkingAdults |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable BingeDrinkingFrecuencyAdults
+data_overall$BingeDrinkingFrecuencyAdults |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable BingeDrinkingIntensityAdults
+data_gender$BingeDrinkingIntensityAdults |> 
+ moments::agostino.test()
+
+## Test de hipótesis de sesgo - D'Agostino
+### Variable BingeDrinkingPrevalenceAdults
+data_overall$BingeDrinkingPrevalenceAdults |> 
+ moments::agostino.test()
+```
+:::
+
+Los resultados obtenidos al aplicar los test a las variables numéricas fueron los siguientes:
+
+| Variable                        | Test kurtosis<br>Anscombe-Glynn | Test sesgo<br>D'Agostino |
+|---------------------------------|---------------------------------|--------------------------|
+| `Deaths`                        | $< 0.05$                        | $< 0.05$                 |
+| `Population`                    | $< 0.05$                        | $< 0.05$                 |
+| `AgeAdjustedDeathRate`          | $< 0.05$                        | $< 0.05$                 |
+| `PercentageOfTotalDeaths`       | $< 0.05$                        | $< 0.05$                 |
+| `HeavyDrinkingAdults`           | No significativo                | No significativo         |
+| `BingeDrinkingFrecuencyAdults`  | No significativo                | $< 0.05$                 |
+| `BingeDrinkingIntensityAdults`  | $< 0.05$                        | No significativo         |
+| `BingeDrinkingPrevalenceAdults` | No significativo                | No significativo         |
+:::
+:::
+
+### 03e - Explorar normalidad (*QQ-plots and Shapiro-Wilk*)
+
+Para explorar la normalidad de las variables se utilizaron las siguientes técnicas:
+
+| Técnica                     | Descripción                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Evaluación gráfica: QQ-Plot | Método gráfico para el diagnóstico de diferencias entre la distribución de probabilidad de una población de la que se ha extraído una muestra aleatoria y una distribución usada para la comparación [@eswiki:130441335]                                                                                                                                                                                                                                                                      |
+| Test de Shapiro-Wilks       | Se considera el test más potente para testar la normalidad, seguido de cerca por el Anderson--Darling<br><br>- $H_0$: Los datos provienen de una variable normalmente distribuida<br>- $H_1$: Los datos no están distribuidos según una distribución normal.<br><br>Si la muestra es muy grande, es posible que el test detecte desviaciones mínimas frente a la normal, que no tengan importancia práctica. Por eso el test debe interpretarse siempre conjuntamente con el gráfico QQ-plot. |
+
+::: {.callout-note title="1- Objeto `data`" collapse="true"}
+#### Objeto `data`
+
+Hay tres variables que se ajustan aproximadamente a una distribución normal, tanto visualmente como en el test de hipótesis de Shapiro-Wilks: `HeavyDrinkingAdults`, `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`. Son las mismas tres variables con los test de kurtosis y sesgo no significativos.
+
+##### Test gráfico - QQ plot (`DataExplorer::plot_qq()`)
+
+Hay tres variables que, visualmente se ajustan aproximadamente a una distribución normal: `HeavyDrinkingAdults`, `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`. Son las mismas tres variables con los test de kurtosis y sesgo no significativos.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+data |> 
+  DataExplorer::plot_qq(
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+    )
+
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03e_qqplot_general.jpg')
+)
+
+
+```
+
+![](images/eda_data_03e_qqplot_general.jpg)
+
+Cuando estratificamos por la variable sexo, estas variables mantienen su tendencia a la normalidad
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+
+data |> 
+  DataExplorer::plot_qq(
+    by = 'Sex',
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+  )
+
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03e_qqplot_bySex.jpg')
+)
+```
+
+![](images/eda_data_03e_qqplot_bySex.jpg)
+
+##### Test de hipótesis (Shapiro-Wilk)
+
+Hay tres variables con un test no significativo, y, por tanto, no es posible rechazar la hipótesis nula de normalidad: `HeavyDrinkingAdults`, `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+data |> 
+  dlookr::normality() |> 
+  dplyr::mutate_if(is.numeric, ~round(., digits = 3)) |> 
+  flextable::flextable()
+```
+:::
+
+::: {.callout-note title="2- Objeto `data_gender`" collapse="true"}
+#### Objeto `data_gender`
+
+Hay una variable que, visualmente se ajusta aproximadamente a una distribución normal: `BingeDrinkingFrecuencyAdults`. Hay muchas variables que son aproximadamente normales en el centro de la distribución, pero que no lo son en los extremos (outliers).
+
+##### Test gráfico - QQ plot (`DataExplorer::plot_qq()`)
+
+Hay una variable que, visualmente se ajustan aproximadamente a una distribución normal: `BingeDrinkingFrecuencyAdults`. Hay muchas variables que son aproximadamente normales en el centro de la distribución, pero que no lo son en los extremos (outliers).
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+data_gender |> 
+  DataExplorer::plot_qq(
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+    )
+
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03e_qqplot_general.jpg')
+)
+
+```
+
+![](images/eda_data_gender_03e_qqplot_general.jpg)
+
+Cuando estratificamos por la variable sexo, estas variables mantienen su tendencia a la normalidad, y persiste la influencia de los outliers, especialmente para los varones.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+
+data_gender |> 
+  DataExplorer::plot_qq(
+    by = 'Sex',
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+  )
+
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03e_qqplot_bySex.jpg')
+)
+```
+
+![](images/eda_data_gender_03e_qqplot_bySex.jpg)
+
+##### Test de hipótesis (Shapiro-Wilk)
+
+Hay una variable con un test no significativo, y, por tanto, no es posible rechazar la hipótesis nula de normalidad: `BingeDrinkingFrecuencyAdults`.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+data_gender |> 
+  dlookr::normality() |> 
+  dplyr::mutate_if(is.numeric, ~round(., digits = 3)) |> 
+  flextable::flextable()
+```
+:::
+
+::: {.callout-note title="3- Objeto `data_overall`" collapse="true"}
+#### Objeto `data_overall`
+
+Al considerar los datos globales, ninguna variable se ajusta ni visualmente ni en el test de hipótesis a una distribución normal.
+
+##### Test gráfico - QQ plot (`DataExplorer::plot_qq()`)
+
+Visualmente, ninguna variable se ajusta a lo esperado en una distribución normal..
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+data_overall |> 
+  DataExplorer::plot_qq(
+    ggtheme = ggplot2::theme_bw(),
+    nrow = 4L,
+    ncol = 2L
+    )
+
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_overall_03e_qqplot_general.jpg')
+)
+
+```
+
+![](images/eda_data_overall_03e_qqplot_general.jpg)
+
+##### Test de hipótesis (Shapiro-Wilk)
+
+Ninguna variable tiene un test no significativo, y, por tanto, no es posible afirmar la hipótesis nula de normalidad.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+data_overall |> 
+  dlookr::normality() |> 
+  dplyr::mutate_if(is.numeric, ~round(., digits = 3)) |> 
+  flextable::flextable()
+```
+:::
+
+### 03f - Comparar grupos (*Boxplots, non-parametric tests*)
+
+Para la comparación entre grupos, se utilizaron dos técnicas:
+
+-   La valoración gráfica, mediante boxplots
+-   El test de hipótesis no paramétrico
+
+::: {.callout-note title="1- Objeto `data`" collapse="true"}
+#### Objeto `data`
+
+El objeto `data` tiene la variable `Sex`, con tres niveles que son redundantes entre sí: Hombres, Mujeres y valoración global.
+
+En la fase exploratoria, esta variable se utilizó para comparar los indicadores entre hombres y mujeres, y entre cada uno de ellos con la media global.
+
+::: {.callout-caution title="03fa - Valoración gráfica: `DataExplorer::plot_boxplot()`" collapse="true"}
+##### 03fa - Valoración gráfica: `DataExplorer::plot_boxplot()`
+
+Se observa una diferencia entre los dos sexos, y entre cada sexo con la media, para las variables, `BingeDrinkingFrecuencyAdults`, `BingeDrinkingIntensityAdults` y `BingeDrinkingPrevalenceAdults`. También se ha observa una diferencia entre hombres y mujeres para la variable `AgeAdjustedDeathRate`.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+## Reordenamos los niveles de los factores para una visualización más equilibrada
+data$State  <- with(
+  data,
+  reorder(State , AgeAdjustedDeathRate, median , na.rm = T)
+  )
+
+data |> 
+  DataExplorer::plot_boxplot(
+    geom_boxplot_args = list('outlier.colour' = 'darkred'),
+    ggtheme = ggplot2::theme_bw(),
+    by = 'Sex',
+    nrow = 4L,
+    ncol = 2L
+  )
+
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03fa_boxplot.jpg')
+)
+```
+
+![](images/eda_data_03fa_boxplot.jpg)
+:::
+
+::: {.callout-caution title="03fb - Test de hipótesis: `ggstatsplot::ggbetweenstats()`" collapse="true"}
+##### 03fb - Test de hipótesis: `ggstatsplot::ggbetweenstats()`
+
+Se evidenciaron diferencias estadísticamente significativas entre hombres y mujeres, y entre cada uno de ellos con la media general, para las variables `BingeDrinkingFrecuencyAdults`, `BingeDrinkingIntensityAdults` y `BingeDrinkingPrevalenceAdults`. También se ha evidenciado una diferencia significativa entre hombres y mujeres para la variable `AgeAdjustedDeathRate`.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data,
+  x = Sex,
+  y = AgeAdjustedDeathRate,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Age Adjusted Death Rate, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03fb_testAgeAdjustedDeathRate.jpg')
+)
+```
+
+![](images/eda_data_03fb_testAgeAdjustedDeathRate.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data,
+  x = Sex,
+  y = BingeDrinkingFrecuencyAdults,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Binge Drinking Frecuency in Adults, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03fb_testBingeDrinkingFrecuencyAdults.jpg')
+)
+```
+
+![](images/eda_data_03fb_testBingeDrinkingFrecuencyAdults.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data,
+  x = Sex,
+  y = BingeDrinkingIntensityAdults,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Binge Drinking Intensity in Adults, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03fb_testBingeDrinkingIntensityAdults.jpg')
+)
+```
+
+![](images/eda_data_03fb_testBingeDrinkingIntensityAdults.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data,
+  x = Sex,
+  y = BingeDrinkingPrevalenceAdults,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Binge Drinking Prevalence in Adults, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03fb_testBingeDrinkingPrevalenceAdults.jpg')
+)
+```
+
+![](images/eda_data_03fb_testBingeDrinkingPrevalenceAdults.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data,
+  x = Sex,
+  y = Deaths,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Deaths, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03fb_testDeaths.jpg')
+)
+```
+
+![](images/eda_data_03fb_testDeaths.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data,
+  x = Sex,
+  y = HeavyDrinkingAdults,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Heavy Drinking in Adults, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03fb_testHeavyDrinkingAdults.jpg')
+)
+```
+
+![](images/eda_data_03fb_testHeavyDrinkingAdults.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data,
+  x = Sex,
+  y = PercentageOfTotalDeaths,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Percentage of Total Deaths, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03fb_testPercentageOfTotalDeaths.jpg')
+)
+```
+
+![](images/eda_data_03fb_testPercentageOfTotalDeaths.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+ggstatsplot::ggbetweenstats(
+  data = data,
+  x = Sex,
+  y = Population,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Population, by sex"
+  )
+
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_03fb_testPopulation.jpg')
+)
+
+```
+
+![](images/eda_data_03fb_testPopulation.jpg)
+:::
+:::
+
+::: {.callout-note title="2- Objeto `data_gender`" collapse="true"}
+#### Objeto `data_gender`
+
+::: {.callout-caution title="03fa - Valoración gráfica: `DataExplorer::plot_boxplot()`" collapse="true"}
+##### 03fa - Valoración gráfica: `DataExplorer::plot_boxplot()`
+
+Se observa una diferencia entre los dos sexos para las variables, `HeavyDrinkingAdults`, `AgeAdjustedDeathRate`, `BingeDrinkingPrevalenceAdults` y `BingeDrinkingIntensityAdults`.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+## Reordenamos los niveles de los factores para una visualización más equilibrada
+data_gender$State  <- with(
+  data_gender, 
+  reorder(State , AgeAdjustedDeathRate, median , na.rm = T)
+  )
+
+data_gender |> 
+  DataExplorer::plot_boxplot(
+    geom_boxplot_args = list('outlier.colour' = 'darkred'),
+    ggtheme = ggplot2::theme_bw(),
+    by = 'Sex',
+    nrow = 4L,
+    ncol = 2L
+  )
+
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03fa_boxplot.jpg')
+)
+```
+
+![](images/eda_data_gender_03fa_boxplot.jpg)
+:::
+
+::: {.callout-caution title="03fb - Test de hipótesis: `ggstatsplot::ggbetweenstats()`" collapse="true"}
+##### 03fb - Test de hipótesis: `ggstatsplot::ggbetweenstats()`
+
+Se evidenciaron diferencias estadísticamente significativas entre hombres y mujeres, y entre cada uno de ellos con la media general, para las variables `BingeDrinkingFrecuencyAdults`, `BingeDrinkingIntensityAdults` y `BingeDrinkingPrevalenceAdults`. También se ha evidenciado una diferencia significativa entre hombres y mujeres para la variable `AgeAdjustedDeathRate`.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data_gender,
+  x = Sex,
+  y = AgeAdjustedDeathRate,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Age Adjusted Death Rate, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03fb_testAgeAdjustedDeathRate.jpg')
+)
+```
+
+![](images/eda_data_gender_03fb_testAgeAdjustedDeathRate.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data_gender,
+  x = Sex,
+  y = BingeDrinkingFrecuencyAdults,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Binge Drinking Frecuency in Adults, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03fb_testBingeDrinkingFrecuencyAdults.jpg')
+)
+```
+
+![](images/eda_data_gender_03fb_testBingeDrinkingFrecuencyAdults.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data_gender,
+  x = Sex,
+  y = BingeDrinkingIntensityAdults,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Binge Drinking Intensity in Adults, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03fb_testBingeDrinkingIntensityAdults.jpg')
+)
+```
+
+![](images/eda_data_gender_03fb_testBingeDrinkingIntensityAdults.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data_gender,
+  x = Sex,
+  y = BingeDrinkingPrevalenceAdults,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Binge Drinking Prevalence in Adults, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03fb_testBingeDrinkingPrevalenceAdults.jpg')
+)
+```
+
+![](images/eda_data_gender_03fb_testBingeDrinkingPrevalenceAdults.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data_gender,
+  x = Sex,
+  y = Deaths,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Deaths, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03fb_testDeaths.jpg')
+)
+```
+
+![](images/eda_data_gender_03fb_testDeaths.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data_gender,
+  x = Sex,
+  y = HeavyDrinkingAdults,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Heavy Drinking in Adults, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03fb_testHeavyDrinkingAdults.jpg')
+)
+```
+
+![](images/eda_data_gender_03fb_testHeavyDrinkingAdults.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data_gender,
+  x = Sex,
+  y = PercentageOfTotalDeaths,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Percentage of Total Deaths, by sex"
+  )
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03fb_testPercentageOfTotalDeaths.jpg')
+)
+```
+
+![](images/eda_data_gender_03fb_testPercentageOfTotalDeaths.jpg)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+ggstatsplot::ggbetweenstats(
+  data = data_gender,
+  x = Sex,
+  y = Population,
+  type = 'np'       # Nonparametric
+) +
+  ggplot2::ggtitle(
+    "Population, by sex"
+  )
+
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_gender_03fb_testPopulation.jpg')
+)
+
+```
+
+![](images/eda_data_gender_03fb_testPopulation.jpg)
+:::
+:::
+
+::: {.callout-note title="3- Objeto `data_overall`" collapse="true"}
+#### Objeto `data_overall`
+
+::: {.callout-caution title="03fa - Valoración gráfica: `DataExplorer::plot_boxplot()`" collapse="true"}
+##### 03fa - Valoración gráfica: `DataExplorer::plot_boxplot()`
+
+Se observan diferencias en el valor de los indicadores para todos los estados, para las distintas variables, identificándose estados con valores en torno a la media, y otros con valor muy superior.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+#| output: false
+
+## Reordenamos los niveles de los factores para una visualización más equilibrada
+data_overall$State  <- with(
+  data_overall, 
+  reorder(State , AgeAdjustedDeathRate, median , na.rm = T)
+  )
+
+data_overall |> 
+  DataExplorer::plot_boxplot(
+    by = 'State',
+    ggtheme = ggplot2::theme_bw(),
+    ncol = 4L,
+    nrow = 2L
+  )
+
+ggplot2::ggsave(
+  here::here('notebooks', 'images', 'eda_data_overall_03fa_boxplot.jpg')
+)
+```
+
+![](images/eda_data_overall_03fa_boxplot.jpg)
+:::
+
+::: {.callout-caution title="03fb - Test de hipótesis: `ggstatsplot::ggbetweenstats()`" collapse="true"}
+##### 03fb - Test de hipótesis: `ggstatsplot::ggbetweenstats()`
+
+En este dataset no hay observaciones suficientes para hacer un análisis comparativo de las variables numéricas por los niveles de la variable `State`.
+:::
+:::
+
+### 03g - Explorar correlaciones (*Several methods*)
+
+Se utilizaron las siguientes técnicas para explorar la correlación:
+
+-   03ga - Matriz de correlación, mediante el test de Spearman
+-   03gb - Correlograma, para visualizar la fuerza, la significación estadística y la dirección de la correlación
+-   03gc - El test de hipótesis estadístico para la correlación
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Función para convertir la tabla de correlación en un data.frame
+## Tomada de http://www.sthda.com/english/wiki/correlation-matrix-a-quick-start-guide-to-analyze-format-and-visualize-a-correlation-matrix-using-r-software
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor = (cormat)[ut],
+    p = pmat[ut]
+    )
+}
+
+```
+
+::: {.callout-note title="1- Objeto `data`" collapse="true"}
+#### Objeto `data`
+
+::: {.callout-caution title="03ga - Correlation matrix" collapse="true"}
+##### 03ga - Correlation matrix
+
+Se exploraron las correlaciones entre variables numéricas con el test de Spearman. Se obtuvieron los siguientes resultados (en verde, las correlaciones estadísticamente significativas):
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+
+# Análisis de correlación con `Hmisc::rcorr()`
+corrAnalysis_data <- Hmisc::rcorr(
+  as.matrix(data[,3:10]), 
+  type = c("spearman")
+  )
+
+# Tabla para visualización de resultados
+## Se colorean en verde las correlaciones significativas (test np Spearman)
+## Método: https://stackoverflow.com/questions/62730125/flextable-basic-conditional-formatting
+tmpTbl_data <- flattenCorrMatrix(
+  round(corrAnalysis_data$r, 2), 
+  round(corrAnalysis_data$P, 2)
+  ) 
+colormatrix_data <- ifelse(tmpTbl_data$p < .05, "lightgreen", "white")
+tmpTbl_data |> 
+  flextable::flextable() |> 
+  flextable::bg(bg = colormatrix_data)
+
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+psych::pairs.panels(
+  data[,3:10], 
+  method = "spearman",
+  hist.col = "steelblue", 
+  show.points = TRUE, 
+  stars = TRUE, 
+  gap = 0.05, 
+  pch = ".", 
+  ellipses = FALSE, 
+  scale = FALSE,
+  jiggle = TRUE,
+  factor = 2,
+  main = "Correlation matrix", 
+  col = "darkred", 
+  pty = "m", 
+  font = 2,
+  )
+
+```
+:::
+
+::: {.callout-caution title="03gb - Correlograma (visualización de la correlación)" collapse="true"}
+##### 03gb - Correlograma (visualización de la correlación)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+
+corrplot::corrplot(
+  corrAnalysis_data$r, 
+  method = "ellipse",
+  type = "lower", 
+  order = "hclust", 
+  tl.col = "black", 
+  diag = FALSE
+  )
+```
+:::
+
+::: {.callout-caution title="03gc - Test de hipótesis `ggstatsplot::ggcorrmat()`" collapse="true"}
+##### 03gc - Test de hipótesis `ggstatsplot::ggcorrmat()`
+
+Se han encontrado las siguientes correlaciones estadísticamente significativas:
+
+-   Una correlación negativa entre `Population` y `AgeAdjustedDeathRate`
+
+-   Una correlación positiva entre:
+
+    -   `Deaths` y `Population`
+    -   `Deaths` y `PercentageOfTotalDeaths`
+    -   `Population` y `PercentageOfTotalDeaths`
+    -   `HeavyDrinkingAdults` y `AgeAdjustedDeathRate`
+    -   `BingeDrinkingPrevalenceAdults` y `HeavyDrinkingAdults`
+    -   `BingeDrinkingPrevalenceAdults` y `BingeDrinkingFrecuencyAdults`
+    -   `BingeDrinkingPrevalenceAdults` y `BingeDrinkingIntensityAdults`
+    -   `BingeDrinkingIntensityAdults` y `BingeDrinkingFrecuencyAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+ggstatsplot::ggcorrmat(
+  data = data,
+  type = 'np',           ## Non-parametric Spearman correlation
+  output = 'dataframe'
+) 
+```
+:::
+:::
+
+::: {.callout-note title="2- Objeto `data_gender`" collapse="true"}
+#### Objeto `data_gender`
+
+::: {.callout-caution title="03ga - Correlation matrix" collapse="true"}
+##### 03ga - Correlation matrix
+
+Se exploraron las correlaciones entre variables numéricas con el test de Spearman. Se obtuvieron los siguientes resultados (en verde, las correlaciones estadísticamente significativas):
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Análisis de correlación con `Hmisc::rcorr()`
+corrAnalysis_data_gender <- Hmisc::rcorr(
+  as.matrix(data_gender[,3:10]), 
+  type = c("spearman")
+  )
+
+# Tabla para visualización de resultados
+## Se colorean en verde las correlaciones significativas (test np Spearman)
+## Método: https://stackoverflow.com/questions/62730125/flextable-basic-conditional-formatting
+tmpTbl_data_gender <- flattenCorrMatrix(
+  round(corrAnalysis_data_gender$r, 2), 
+  round(corrAnalysis_data_gender$P, 2)
+  ) 
+colormatrix_data_gender <- ifelse(tmpTbl_data_gender$p < .05, "lightgreen", "white")
+tmpTbl_data_gender |> 
+  flextable::flextable() |> 
+  flextable::bg(bg = colormatrix_data_gender)
+
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+psych::pairs.panels(
+  data_gender[,3:10], 
+  method = "spearman",
+  hist.col = "steelblue", 
+  show.points = TRUE, 
+  stars = TRUE, 
+  gap = 0.05, 
+  pch = ".", 
+  ellipses = FALSE, 
+  scale = FALSE,
+  jiggle = TRUE,
+  factor = 2,
+  main = "Correlation matrix", 
+  col = "darkred", 
+  pty = "m", 
+  font = 2,
+  )
+
+```
+:::
+
+::: {.callout-caution title="03gb - Correlograma (visualización de la correlación)" collapse="true"}
+##### 03gb - Correlograma (visualización de la correlación)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+
+corrplot::corrplot(
+  corrAnalysis_data_gender$r, 
+  method = "ellipse",
+  type = "lower", 
+  order = "hclust", 
+  tl.col = "black", 
+  diag = FALSE
+  )
+```
+:::
+
+::: {.callout-caution title="03gc - Test de hipótesis `ggstatsplot::ggcorrmat()`" collapse="true"}
+##### 03gc - Test de hipótesis `ggstatsplot::ggcorrmat()`
+
+Se han encontrado las siguientes correlaciones estadísticamente significativas:
+
+-   Una correlación negativa entre `Population` y `Deaths`.
+-   Una correlación positiva entre:
+    -   `Deaths` y `PercentageOfTotalDeaths`.
+    -   `Deaths` y `BingeDrinkingIntensityAdults`.
+    -   `Deaths` y `BingeDrinkingPrevalenceAdults`.
+    -   `Population` y `AgeAdjustedDeathRate`.
+    -   `Population` y `PercentageOfTotalDeaths`.
+    -   `Population` y `BingeDrinkingFrecuencyAdults`.
+    -   `AgeAdjustedDeathRate` y `HeavyDrinkingAdults`.
+    -   `AgeAdjustedDeathRate` y `BingeDrinkingFrecuencyAdults`.
+    -   `AgeAdjustedDeathRate` y `BingeDrinkingIntensityAdults`.
+    -   `AgeAdjustedDeathRate` y `BingeDrinkingPrevalenceAdults`.
+    -   `PercentageOfTotalDeaths` y `BingeDrinkingIntensityAdults`.
+    -   `PercentageOfTotalDeaths` y `BingeDrinkingPrevalenceAdults`.
+    -   `HeavyDrinkingAdults` y `BingeDrinkingIntensityAdults`.
+    -   `HeavyDrinkingAdults` y `BingeDrinkingPrevalenceAdults`.
+    -   `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`.
+    -   `BingeDrinkingIntensityAdults` y `BingeDrinkingPrevalenceAdults`.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+ggstatsplot::ggcorrmat(
+  data = data_gender,
+  type = 'np',           ## Non-parametric Spearman correlation
+  output = 'dataframe'
+) 
+```
+:::
+:::
+
+::: {.callout-note title="3- Objeto `data_overall`" collapse="true"}
+#### Objeto `data_overall`
+
+::: {.callout-caution title="03ga - Correlation matrix" collapse="true"}
+##### 03ga - Correlation matrix
+
+Se exploraron las correlaciones entre variables numéricas con el test de Spearman. Se obtuvieron los siguientes resultados (en verde, las correlaciones estadísticamente significativas):
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Análisis de correlación con `Hmisc::rcorr()`
+corrAnalysis_data_overall <- Hmisc::rcorr(
+  as.matrix(data_overall[,2:9]), 
+  type = c("spearman")
+  )
+
+# Tabla para visualización de resultados
+## Se colorean en verde las correlaciones significativas (test np Spearman)
+## Método: https://stackoverflow.com/questions/62730125/flextable-basic-conditional-formatting
+tmpTbl_data_overall <- flattenCorrMatrix(
+  round(corrAnalysis_data_overall$r, 2), 
+  round(corrAnalysis_data_overall$P, 2)
+  ) 
+colormatrix_data_overall <- ifelse(tmpTbl_data_overall$p < .05, "lightgreen", "white")
+tmpTbl_data_overall |> 
+  flextable::flextable() |> 
+  flextable::bg(bg = colormatrix_data_overall)
+
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+psych::pairs.panels(
+  data_overall[,2:9], 
+  method = "spearman",
+  hist.col = "steelblue", 
+  show.points = TRUE, 
+  stars = TRUE, 
+  gap = 0.05, 
+  pch = ".", 
+  ellipses = FALSE, 
+  scale = FALSE,
+  jiggle = TRUE,
+  factor = 2,
+  main = "Correlation matrix", 
+  col = "darkred", 
+  pty = "m", 
+  font = 2,
+  )
+
+```
+:::
+
+::: {.callout-caution title="03gb - Correlograma (visualización de la correlación)" collapse="true"}
+##### 03gb - Correlograma (visualización de la correlación)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+
+corrplot::corrplot(
+  corrAnalysis_data_overall$r, 
+  method = "ellipse",
+  type = "lower", 
+  order = "hclust", 
+  tl.col = "black", 
+  diag = FALSE
+  )
+```
+:::
+
+::: {.callout-caution title="03gc - Test de hipótesis `ggstatsplot::ggcorrmat()`" collapse="true"}
+##### 03gc - Test de hipótesis `ggstatsplot::ggcorrmat()`
+
+Se han encontrado las siguientes correlaciones estadísticamente significativas:
+
+-   Una correlación negativa entre:
+    -   `Deaths` y `HeavyDrinkingAdults`.
+    -   `Population` y `AgeAdjustedDeathRate`.
+    -   `Population` y `HeavyDrinkingAdults`.
+-   Una correlación positiva entre:
+    -   `Deaths` y `Population`.
+    -   `Deaths` y `PercentageOfTotalDeaths`.
+    -   `PercentageOfTotalDeaths` y `HeavyDrinkingAdults`.
+    -   `Population` y `PercentageOfTotalDeaths`.
+    -   `AgeAdjustedDeathRate` y `HeavyDrinkingAdults`.
+    -   `HeavyDrinkingAdults` y `BingeDrinkingIntensityAdults`.
+    -   `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+ggstatsplot::ggcorrmat(
+  data = data_overall,
+  type = 'np',           ## Non-parametric Spearman correlation
+  output = 'dataframe'
+) 
+```
+:::
+:::
+
+### 03h - Explorar modelos de datos para las correlaciones estadísticamente significativas
+
+Se crearon modelos exploratorios para todos los pares de variables en las que se ha obtenido una correlación lineal estadística significativa, para cada uno de los *data.frame*.
+
+::: {.callout-note title="1- Objeto `data`" collapse="true"}
+#### Objeto `data`
+
+Se identificaron correlaciones estadísticamente significativas en los siguientes pares de variables:
+
+-   Correlación negativa entre `Population` y `AgeAdjustedDeathRate`
+-   Correlación positiva entre:
+    -   `Deaths` y `Population`
+    -   `Deaths` y `PercentageOfTotalDeaths`
+    -   `Population` y `PercentageOfTotalDeaths`
+    -   `HeavyDrinkingAdults` y `AgeAdjustedDeathRate`
+    -   `BingeDrinkingPrevalenceAdults` y `HeavyDrinkingAdults`
+    -   `BingeDrinkingPrevalenceAdults` y `BingeDrinkingFrecuencyAdults`
+    -   `BingeDrinkingPrevalenceAdults` y `BingeDrinkingIntensityAdults`
+    -   `BingeDrinkingIntensityAdults` y `BingeDrinkingFrecuencyAdults`
+
+##### `Population` y `AgeAdjustedDeathRate`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Population` y `AgeAdjustedDeathRate`
+data |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Population,
+      y = AgeAdjustedDeathRate
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Deaths` y `Population`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Population` y `Deaths`
+data |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Population,
+      y = Deaths
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Deaths` y `PercentageOfTotalDeaths`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `PercentageOfTotalDeaths` y `Deaths`
+data |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = PercentageOfTotalDeaths,
+      y = Deaths
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Population` y `PercentageOfTotalDeaths`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Population` y `PercentageOfTotalDeaths`
+data |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Population,
+      y = PercentageOfTotalDeaths
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `HeavyDrinkingAdults` y `AgeAdjustedDeathRate`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `HeavyDrinkingAdults` y `AgeAdjustedDeathRate`
+data |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = HeavyDrinkingAdults,
+      y = AgeAdjustedDeathRate,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `BingeDrinkingPrevalenceAdults` y `HeavyDrinkingAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingPrevalenceAdults` y `HeavyDrinkingAdults`
+data |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = HeavyDrinkingAdults,
+      y = BingeDrinkingPrevalenceAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `BingeDrinkingPrevalenceAdults` y `BingeDrinkingFrecuencyAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingPrevalenceAdults` y `BingeDrinkingFrecuencyAdults`
+data |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = BingeDrinkingFrecuencyAdults,
+      y = BingeDrinkingPrevalenceAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `BingeDrinkingPrevalenceAdults` y `BingeDrinkingIntensityAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingPrevalenceAdults` y `BingeDrinkingIntensityAdults`
+data |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = BingeDrinkingIntensityAdults,
+      y = BingeDrinkingPrevalenceAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `BingeDrinkingIntensityAdults` y `BingeDrinkingFrecuencyAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingFrecuencyAdults` y `BingeDrinkingIntensityAdults`
+data |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = BingeDrinkingIntensityAdults,
+      y = BingeDrinkingFrecuencyAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+:::
+
+::: {.callout-note title="2- Objeto `data_gender`" collapse="true"}
+#### Objeto `data_gender`
+
+Se han encontrado las siguientes correlaciones estadísticamente significativas:
+
+-   Una correlación negativa entre `Population` y `Deaths`.
+-   Una correlación positiva entre:
+    -   `Deaths` y `PercentageOfTotalDeaths`.
+    -   `Deaths` y `BingeDrinkingIntensityAdults`.
+    -   `Deaths` y `BingeDrinkingPrevalenceAdults`.
+    -   `Population` y `AgeAdjustedDeathRate`.
+    -   `Population` y `PercentageOfTotalDeaths`.
+    -   `Population` y `BingeDrinkingFrecuencyAdults`.
+    -   `AgeAdjustedDeathRate` y `HeavyDrinkingAdults`.
+    -   `AgeAdjustedDeathRate` y `BingeDrinkingFrecuencyAdults`.
+    -   `AgeAdjustedDeathRate` y `BingeDrinkingIntensityAdults`.
+    -   `AgeAdjustedDeathRate` y `BingeDrinkingPrevalenceAdults`.
+    -   `PercentageOfTotalDeaths` y `BingeDrinkingIntensityAdults`.
+    -   `PercentageOfTotalDeaths` y `BingeDrinkingPrevalenceAdults`.
+    -   `HeavyDrinkingAdults` y `BingeDrinkingIntensityAdults`.
+    -   `HeavyDrinkingAdults` y `BingeDrinkingPrevalenceAdults`.
+    -   `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`.
+    -   `BingeDrinkingIntensityAdults` y `BingeDrinkingPrevalenceAdults`.
+
+##### `Population` y `Deaths`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Population` y `Deaths`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Population,
+      y = Deaths
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Deaths` y `PercentageOfTotalDeaths`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `PercentageOfTotalDeaths` y `Deaths`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = PercentageOfTotalDeaths,
+      y = Deaths
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Deaths` y `BingeDrinkingIntensityAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingIntensityAdults` y `Deaths`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = BingeDrinkingIntensityAdults,
+      y = Deaths
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Deaths` y `BingeDrinkingPrevalenceAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingPrevalenceAdults` y `Deaths`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = BingeDrinkingPrevalenceAdults,
+      y = Deaths
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Population` y `AgeAdjustedDeathRate`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Population` y `AgeAdjustedDeathRate`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Population,
+      y = AgeAdjustedDeathRate
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Population` y `PercentageOfTotalDeaths`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Population` y `PercentageOfTotalDeaths`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Population,
+      y = PercentageOfTotalDeaths
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Population` y `BingeDrinkingFrecuencyAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Population` y `BingeDrinkingFrecuencyAdults`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Population,
+      y = BingeDrinkingFrecuencyAdults
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `AgeAdjustedDeathRate` y `HeavyDrinkingAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `AgeAdjustedDeathRate` y `HeavyDrinkingAdults`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = AgeAdjustedDeathRate,
+      y = HeavyDrinkingAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `AgeAdjustedDeathRate` y `BingeDrinkingFrecuencyAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `AgeAdjustedDeathRate` y `BingeDrinkingFrecuencyAdults`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = AgeAdjustedDeathRate,
+      y = BingeDrinkingFrecuencyAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `AgeAdjustedDeathRate` y `BingeDrinkingIntensityAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `AgeAdjustedDeathRate` y `BingeDrinkingIntensityAdults`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = AgeAdjustedDeathRate,
+      y = BingeDrinkingIntensityAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `AgeAdjustedDeathRate` y `BingeDrinkingPrevalenceAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `AgeAdjustedDeathRate` y `BingeDrinkingPrevalenceAdults`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = AgeAdjustedDeathRate,
+      y = BingeDrinkingPrevalenceAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `PercentageOfTotalDeaths` y `BingeDrinkingIntensityAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `HeavyDrinkingAdults` y `AgeAdjustedDeathRate`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = HeavyDrinkingAdults,
+      y = AgeAdjustedDeathRate,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `PercentageOfTotalDeaths` y `BingeDrinkingPrevalenceAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `PercentageOfTotalDeaths` y `BingeDrinkingPrevalenceAdults`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = PercentageOfTotalDeaths,
+      y = BingeDrinkingPrevalenceAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `HeavyDrinkingAdults` y `BingeDrinkingIntensityAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingPrevalenceAdults` y `HeavyDrinkingAdults`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = HeavyDrinkingAdults,
+      y = BingeDrinkingPrevalenceAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `HeavyDrinkingAdults` y `BingeDrinkingPrevalenceAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingPrevalenceAdults` y `BingeDrinkingFrecuencyAdults`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = HeavyDrinkingAdults,
+      y = BingeDrinkingPrevalenceAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = BingeDrinkingFrecuencyAdults,
+      y = BingeDrinkingPrevalenceAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `BingeDrinkingIntensityAdults` y `BingeDrinkingFrecuencyAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingFrecuencyAdults` y `BingeDrinkingIntensityAdults`
+data_gender |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = BingeDrinkingIntensityAdults,
+      y = BingeDrinkingFrecuencyAdults,
+      color = Sex
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+:::
+
+::: {.callout-note title="3- Objeto `data_overall`" collapse="true"}
+#### Objeto `data_overall`
+
+Se han encontrado las siguientes correlaciones estadísticamente significativas:
+
+-   Una correlación negativa entre:
+    -   `Deaths` y `HeavyDrinkingAdults`.
+    -   `Population` y `AgeAdjustedDeathRate`.
+    -   `Population` y `HeavyDrinkingAdults`.
+-   Una correlación positiva entre:
+    -   `Deaths` y `Population`.
+    -   `Deaths` y `PercentageOfTotalDeaths`.
+    -   `Population` y `PercentageOfTotalDeaths`.
+    -   `AgeAdjustedDeathRate` y `HeavyDrinkingAdults`.
+    -   `PercentageOfTotalDeaths` y `HeavyDrinkingAdults`.
+    -   `HeavyDrinkingAdults` y `BingeDrinkingIntensityAdults`.
+    -   `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`.
+
+##### `Deaths` y `HeavyDrinkingAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Deaths` y `HeavyDrinkingAdults`
+data_overall |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Deaths,
+      y = HeavyDrinkingAdults
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Deaths` y `Population`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Deaths` y `Population`
+data_overall |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Deaths,
+      y = Population
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Deaths` y `PercentageOfTotalDeaths`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Deaths` y `PercentageOfTotalDeaths`
+data_overall |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Deaths,
+      y = PercentageOfTotalDeaths
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Population` y `AgeAdjustedDeathRate`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Population` y `AgeAdjustedDeathRate`
+data_overall |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Population,
+      y = AgeAdjustedDeathRate
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Population` y `HeavyDrinkingAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Population` y `HeavyDrinkingAdults`
+data_overall |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Population,
+      y = HeavyDrinkingAdults
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `Population` y `PercentageOfTotalDeaths`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Population` y `PercentageOfTotalDeaths`
+data_overall |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = Population,
+      y = PercentageOfTotalDeaths
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `PercentageOfTotalDeaths` y `HeavyDrinkingAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `PercentageOfTotalDeaths` y `HeavyDrinkingAdults`
+data_overall |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = PercentageOfTotalDeaths,
+      y = HeavyDrinkingAdults
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `HeavyDrinkingAdults` y `BingeDrinkingIntensityAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `Deaths` y `HeavyDrinkingAdults`
+data_overall |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = HeavyDrinkingAdults,
+      y = BingeDrinkingIntensityAdults
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `BingeDrinkingFrecuencyAdults` y `BingeDrinkingPrevalenceAdults`
+data_overall |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = BingeDrinkingFrecuencyAdults,
+      y = BingeDrinkingPrevalenceAdults
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+
+##### `AgeAdjustedDeathRate` y `HeavyDrinkingAdults`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+#### `AgeAdjustedDeathRate` y `HeavyDrinkingAdults`
+data_overall |> 
+  ggplot2::ggplot(
+    mapping = ggplot2::aes(
+      x = AgeAdjustedDeathRate,
+      y = HeavyDrinkingAdults
+    )
+  ) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() 
+```
+:::
+
+### 03i - Análisis de valores faltantes (`NA`'s) y outliers
+
+Se ejecutaron las siguientes acciones
+
+-   03ia - Análisis de valores faltantes `NA`s
+-   03ib - Exploración de Outliers
+
+::: {.callout-caution title="Funciones de R utilizadas en el análisis de datos faltantes (`NA`'s)" collapse="true"}
+Para la evaluación de datos faltantes (`NA`'s) se evaluaron las siguientes dimensiones:
+
+| Dimensión                                                               | Función                                                       | Resultado evaluación                                                                                                                                                                                      |
+|-------------------------------------------------------------------------|---------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Existencia de algún valor valor faltante `NA` (sí/no)                   | `naniar::any_na()`                                            | `TRUE`                                                                                                                                                                                                    |
+| Número total de `NA`s                                                   | `naniar::n_miss()`                                            | $69$                                                                                                                                                                                                      |
+| Variables afectadas por la presencia de `NA`s                           | `is.na() |> colSums()`                                        | `Sex`, `Deaths`, `Population`, `AgeAdjustedDeathRate`, `PercentageOfTotalDeaths`, `HeavyDrinkingAdults`, `BingeDrinkingFrecuencyAdults`, `BingeDrinkingIntensityAdults` y `BingeDrinkingPrevalenceAdults` |
+| Número de `NA` por variable (n y %)                                     | `naniar::miss_var_summary()`<br> `naniar::miss_var_table()`   | Número: Rango $0-12$<br>Porcentaje: Rango $0-7.36\%$                                                                                                                                                      |
+| Número de `NA` por observación (n y %)                                  | `naniar::miss_case_summary()`<br> `naniar::miss_case_table()` | Número: Rango $0-9$<br>Porcentaje: Rango $0-90\%$                                                                                                                                                         |
+| Ranking de variables más afectadas por `NA`'s                           | `naniar::gg_miss_var()`                                       | `Deaths`, `Population`, `PercentageOfTotalDeaths`, `AgeAdjustedDeathRate`                                                                                                                                 |
+| Tipología de los valores faltantes (MAR, MNAR, MCAR)                    | `naniar::vis_miss()`                                          | Los valores faltantes se concentran en las últimas observaciones del dataset (MNAR)                                                                                                                       |
+| Relación entre valores faltantes de distintas variables                 | `naniar::gg_miss_upset()`                                     | Existe una cierta tendencia a agrupar valores faltantes para ciertas variables: `Deaths`, `Population`, `AgeAdjustedDeathRate` y `PercentageOfTotalDeaths`                                                |
+| Relación entre valores faltantes y niveles de las variables categóricas | `naniar::gg_miss_fct()`                                       | Algunos estados concentran todos los valores faltantes. No hay influencia del sexo                                                                                                                        |
+:::
+
+::: {.callout-note title="1- Objeto `data`" collapse="true"}
+#### Objeto `data`
+
+::: {.callout-caution title="03ia - Análisis de valores faltantes `NA`s" collapse="true"}
+##### 03ia - Análisis de valores faltantes `NA`'s
+
+```{r eda - Explorar NAs y outliers}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Existencia de algún valor valor faltante `NA` (sí/no)
+naniar::any_na(data)
+
+## Número total de `NA`s 
+naniar::n_miss(data)
+
+## Variables afectadas por la presencia de `NA`s
+data |> 
+  is.na() |> 
+  colSums() 
+
+## Número de `NA` por variable (n y %) 
+naniar::miss_var_summary(data)
+naniar::miss_var_table(data)
+
+## Número de `NA` por observación (n y %) 
+naniar::miss_case_summary(data)
+naniar::miss_case_table(data)
+
+## Ranking de variables afectadas por `NA`s
+naniar::gg_miss_var(data)
+
+## Tipología de los valores faltantes (MAR, MNAR, MCAR)
+naniar::vis_miss(data) + 
+  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 80))
+
+## Relación entre valores faltantes de distintas variables
+naniar::gg_miss_upset(data)
+
+## Relación entre valores faltantes y niveles de las variables categóricas
+naniar::gg_miss_fct(data, fct = Sex)
+naniar::gg_miss_fct(data, fct = State)
+```
+
+Hallazgos:
+
+-   Los valores faltantes se concentran en las últimas observaciones del dataset , para estados concretos (*Missing not at random*, MNAR).
+-   Existe una cierta tendencia a agrupar valores faltantes para ciertas variables: `Deaths`, `Population`, `AgeAdjustedDeathRate` y `PercentageOfTotalDeaths`
+-   Algunos estados concentran todos los valores faltantes. No hay influencia del sexo.
+:::
+
+::: {.callout-caution title="03ib - Exploración de Outliers" collapse="true"}
+##### 03ib - Exploración de Outliers
+
+Existe un número significativo de outliers en el *data.frame*. Eso deberá tenerse en cuenta para el análisis cluster.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+data |> 
+  dlookr::diagnose_outlier() |> 
+  flextable::flextable()
+```
+
+###### `performance:: check_outliers()`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+performance::check_outliers(
+  data$Deaths,
+  method = 'zscore'
+  ) |> 
+  plot()
+
+```
+
+###### Visualize variables with a ratio of outliers greater than 5% `dlookr::plot_outlier()`
+
+Ninguna variable tiene más de un 5% de outliers en sus valores.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Visualize variables with a ratio of outliers greater than 5%
+data |> 
+  dlookr::diagnose_outlier() |> 
+  dplyr::filter(outliers_ratio > 5) |> 
+  dplyr::select(variables) |> 
+  dplyr::pull() 
+```
+:::
+:::
+
+::: {.callout-note title="2- Objeto `data_gender`" collapse="true"}
+#### Objeto `data_gender`
+
+::: {.callout-caution title="03ia - Análisis de valores faltantes `NA`s" collapse="true"}
+##### 03ia - Análisis de valores faltantes `NA`'s
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Existencia de algún valor valor faltante `NA` (sí/no)
+naniar::any_na(data_gender)
+
+## Número total de `NA`s 
+naniar::n_miss(data_gender)
+
+## Variables afectadas por la presencia de `NA`s
+data_gender |> 
+  is.na() |> 
+  colSums() 
+
+## Número de `NA` por variable (n y %) 
+naniar::miss_var_summary(data_gender)
+naniar::miss_var_table(data_gender)
+
+## Número de `NA` por observación (n y %) 
+naniar::miss_case_summary(data_gender)
+naniar::miss_case_table(data_gender)
+
+## Ranking de variables afectadas por `NA`s
+naniar::gg_miss_var(data_gender)
+
+## Tipología de los valores faltantes (MAR, MNAR, MCAR)
+naniar::vis_miss(data_gender) + 
+  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 80))
+
+## Relación entre valores faltantes de distintas variables
+naniar::gg_miss_upset(data_gender)
+
+## Relación entre valores faltantes y niveles de las variables categóricas
+naniar::gg_miss_fct(data_gender, fct = Sex)
+naniar::gg_miss_fct(data_gender, fct = State)
+```
+
+Hallazgos:
+
+-   Los valores faltantes se concentran en las últimas observaciones del dataset , para estados concretos (*Missing not at random*, MNAR).
+-   Existe una cierta tendencia a agrupar valores faltantes para ciertas variables: `Deaths`, `Population`, `AgeAdjustedDeathRate` y `PercentageOfTotalDeaths`
+-   Algunos estados concentran todos los valores faltantes. No hay influencia del sexo.
+:::
+
+::: {.callout-caution title="03ib - Exploración de Outliers" collapse="true"}
+##### 03ib - Exploración de Outliers
+
+Existe un número significativo de outliers en el *data.frame*. Eso deberá tenerse en cuenta para el análisis cluster.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+data_gender |> 
+  dlookr::diagnose_outlier() |> 
+  flextable::flextable()
+```
+
+###### `performance:: check_outliers()`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+performance::check_outliers(
+  data_gender$Deaths,
+  method = 'zscore'
+  ) |> 
+  plot()
+
+```
+
+###### Visualize variables with a ratio of outliers greater than 5% `dlookr::plot_outlier()`
+
+Ninguna variable tiene más de un 5% de outliers en sus valores.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Visualize variables with a ratio of outliers greater than 5%
+data_gender |> 
+  dlookr::diagnose_outlier() |> 
+  dplyr::filter(outliers_ratio > 5) |> 
+  dplyr::select(variables) |> 
+  dplyr::pull() 
+```
+:::
+:::
+
+::: {.callout-note title="3- Objeto `data_overall`" collapse="true"}
+#### Objeto `data_overall`
+
+::: {.callout-caution title="03ia - Análisis de valores faltantes `NA`s" collapse="true"}
+##### 03ia - Análisis de valores faltantes `NA`'s
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Existencia de algún valor valor faltante `NA` (sí/no)
+naniar::any_na(data_overall)
+
+## Número total de `NA`s 
+naniar::n_miss(data_overall)
+
+## Variables afectadas por la presencia de `NA`s
+data_overall |> 
+  is.na() |> 
+  colSums() 
+
+## Número de `NA` por variable (n y %) 
+naniar::miss_var_summary(data_overall)
+naniar::miss_var_table(data_overall)
+
+## Número de `NA` por observación (n y %) 
+naniar::miss_case_summary(data_overall)
+naniar::miss_case_table(data_overall)
+
+## Ranking de variables afectadas por `NA`s
+naniar::gg_miss_var(data_overall)
+
+## Tipología de los valores faltantes (MAR, MNAR, MCAR)
+naniar::vis_miss(data_overall) + 
+  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 80))
+
+## Relación entre valores faltantes de distintas variables
+naniar::gg_miss_upset(data_overall)
+
+## Relación entre valores faltantes y niveles de las variables categóricas
+naniar::gg_miss_fct(data_overall, fct = State)
+```
+
+Hallazgos:
+
+-   Los valores faltantes se concentran en las últimas observaciones del dataset , para estados concretos (*Missing not at random*, MNAR).
+-   Existe una cierta tendencia a agrupar valores faltantes para ciertas variables: `Deaths`, `Population`, `AgeAdjustedDeathRate` y `PercentageOfTotalDeaths`
+-   Algunos estados concentran todos los valores faltantes. No hay influencia del sexo.
+:::
+
+::: {.callout-caution title="03ib - Exploración de Outliers" collapse="true"}
+##### 03ib - Exploración de Outliers
+
+Existe un número significativo de outliers en el *data.frame*. Eso deberá tenerse en cuenta para el análisis cluster.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+data_overall |> 
+  dlookr::diagnose_outlier() |> 
+  flextable::flextable()
+```
+
+###### `performance:: check_outliers()`
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+performance::check_outliers(
+  data_overall$Deaths,
+  method = 'zscore'
+  ) |> 
+  plot()
+
+```
+
+###### Visualize variables with a ratio of outliers greater than 5% `dlookr::plot_outlier()`
+
+Ninguna variable tiene más de un 5% de outliers en sus valores.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Visualize variables with a ratio of outliers greater than 5%
+data_overall |> 
+  dlookr::diagnose_outlier() |> 
+  dplyr::filter(outliers_ratio > 5) |> 
+  dplyr::select(variables) |> 
+  dplyr::pull() 
+```
+:::
+:::
+
+## Salidas del subproceso
+
+-   Análisis de variables categóricas
+-   Análisis de variables numéricas
+-   Análisis de distribución de variables aleatorias
+-   Estudio de normalidad de las variables numéricas
+-   Comparación de los valores de las variables numéricas según niveles de las variables categóricas
+-   Estudio de correlación lineal entre variables numéricas
+-   Exploración de modelos de datos para correlaciones estadísticamente significativas
+-   Análisis de datos faltantes
+-   Análisis de datos extremos (*outliers*)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Limpieza de los objetos temporales del subproceso
+rm(list = c(
+  'data',
+  'data_gender',
+  'data_overall',
+  'tmpTbl_data',
+  'tmpTbl_data_gender',
+  'tmpTbl_data_overall',
+  'colormatrix_data',
+  'colormatrix_data_gender',
+  'colormatrix_data_overall',
+  'flattenCorrMatrix'
+  )
+)
+```

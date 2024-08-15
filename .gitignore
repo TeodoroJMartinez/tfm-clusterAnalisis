@@ -1,0 +1,9 @@
+/.quarto/
+data
+.Rproj.user
+_book/
+bib
+notebooks/05b_ingesta_files/
+notebooks/05d_eda_files/
+notebooks/05f_analysis_files/
+tfm.zip

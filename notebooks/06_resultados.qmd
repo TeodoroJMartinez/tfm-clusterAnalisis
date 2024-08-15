@@ -1,0 +1,1416 @@
+---
+subtitle: "Resultados"
+author: Teodoro José Martínez Arán
+format: html
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+# Resultados - Análisis cluster {.unnumbered}
+
+## Descripción del subproceso
+
+Subproceso destinado a agrupar observaciones en base a su similitud, de modo que las observaciones pertenecientes a cada uno de los grupos tengan características similares.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Configuración
+## Establecer una semilla aleatoria para el análisis
+set.seed(2024)
+## Impedir que los números grandes se muestren con notación científica
+options(scipen = 999)
+```
+
+## Acciones del subproceso
+
+Se llevó a cabo un conjunto de análisis cluster (5 en total), siguiendo la siguiente metodología
+
+-   05fa - Selección de los datos adecuados para el análisis cluster
+-   05fb - Estandarización de valores numéricos
+-   05fc - Cálculo de la distancia entre observaciones
+-   05fd - Análisis de tendencia de agrupación
+-   05fe - Elección del método y la vinculación de grupos
+-   05ff - Elección del número de grupos finales de forma arbitraria basados en ciertos estadísticos de agrupación.
+-   05fg - Representación e interpretación de los resultados.
+-   05fh - Evaluación de la importancia de las variables
+-   05fi - Visualización de las agrupaciones cluster
+-   05fj - Validación de la agrupación
+-   05fk - Resumen de los resultados obtenidos
+
+### 05fa - Selección de los datos adecuados para el análisis cluster
+
+Durante la fase de análisis exploratorio se evidenció una marcada diferencia en la mortalidad relacionada con alcohol entre ambos sexos, por lo que se analizará el dataset `data_lab` para controlar el efecto de la variable `Sex`.
+
+Además, se observaron problemas de valores atípicos en los distintos conjuntos de datos considerados para el análisis. Estas observaciones podrían ser muy interesantes para nuestro análisis, porque pueden contener información sobre los factores de riesgo más asociados a la mortalidad por alcohol.
+
+-   `data_lab`: con todos los datos (incluyendo *outliers*), y
+-   `data_inliers_lab`: con datos recortados (sin *outliers*).
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Ingesta
+data_lab <- readRDS(here::here('data', 'lab', 'data_lab.rds')) 
+data_inliers_lab  <- readRDS(here::here('data', 'lab', 'data_inliers_lab.rds'))
+```
+
+### 05fb - Estandarización de valores numéricos
+
+Para impedir que las diferencias de magnitud entre las variables numéricas alterase la agrupación, se escalaron los valores de ambos datasets.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+data_std <- scale(data_lab[,-(1:2)])
+
+## Datos recortados
+data_inliers_std <- scale(data_inliers_lab[,-(1:2)])
+```
+
+### 05fc - Cálculo de la distancia entre observaciones
+
+Se utilizó la función `stat::dist()` con los parámetros por defecto (distancia euclídea):
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+data_dist <- dist(data_std)
+
+## Datos recortados
+data_inliers_dist <- dist(data_inliers_std)
+```
+
+#### Visualización de la relación entre las variables estandarizadas
+
+::: {.callout-note title="1- Objeto `data_lab`" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+GGally::ggpairs(data_lab[2:10], ggplot2::aes(colour = Sex)) +
+  ggplot2::ggtitle('Objeto data_lab', subtitle = 'Análisis de correlación')
+```
+:::
+
+::: {.callout-note title="2- Objeto `data_inliers_lab`" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Datos recortados
+GGally::ggpairs(data_inliers_lab[2:10], ggplot2::aes(colour = Sex)) +
+  ggplot2::ggtitle('Objeto data_inliers_lab', subtitle = 'Análisis de correlación')
+```
+:::
+
+### 05fd - Análisis de tendencia de agrupación
+
+Valoramos en primer lugar si es pertinente realizar un análisis de agrupación de los datos. Para ello:
+
+-   Analizamos visualmente los clústeres de datos con el análisis visual de tendencia (VAT)
+-   Evaluamos la tendencia de agrupación con el estadístico de Hopkins.
+
+#### Evaluación visual de tendencia (VAT)
+
+Este mapa del calor reordena la matriz de tal manera que observaciones similares se localizan cerca. Visualmente, se observan entre tres y cinco grandes clusters, que son más evidentes cuando se eliminan los outliers.
+
+::: {.callout-note title="1- Objeto `data_lab`" collapse="true"}
+```{r}
+## Datos totales
+factoextra::fviz_dist(
+  data_dist,
+  lab_size = .1,
+  show_labels = FALSE
+) + 
+  ggplot2::ggtitle(
+    label = "Evaluación visual de tendencia de agrupación (VAT)",
+    subtitle = 'Datos completos (`data_lab`)' 
+  )
+```
+:::
+
+::: {.callout-note title="2- Objeto `data_inliers_lab`" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos recortados
+factoextra::fviz_dist(
+  data_inliers_dist,
+  lab_size = .1,
+  show_labels = FALSE
+) + 
+  ggplot2::ggtitle(
+    label = "Evaluación visual de tendencia de agrupación (VAT)",
+    subtitle = 'Datos sin outliers (`data_inliers_lab`)' 
+  )
+
+```
+:::
+
+#### Estadística de Hopkins
+
+En ambos supuestos (datos totales y recortados), el valor es distinto de 0.5, por lo que suponemos que las distancias observadas entre el conjunto de datos aleatorio y el conjunto de datos real no se debe al azar, y, por tanto, existe tendencia de agrupación.
+
+::: {.callout-note title="1- Objeto `data_lab`" collapse="true"}
+```{r}
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+clustertend::hopkins(
+  data_std,
+  n = nrow(data_std) - 1
+)
+
+```
+:::
+
+::: {.callout-note title="2- Objeto `data_inliers_lab`" collapse="true"}
+```{r}
+## Datos recortados
+clustertend::hopkins(
+  data_inliers_std,
+  n = nrow(data_inliers_std) - 1
+)
+```
+:::
+
+### 05fe - Elección del método y la vinculación de grupos
+
+Se utilizó el método de agrupación por $k$-medias.
+
+### 05ff - Elección del número de grupos finales de forma arbitraria basados en ciertos estadísticos de agrupación.
+
+##### Según criterios de calidad interna
+
+::: {.callout-note title="1- Objeto `data_lab`" collapse="true"}
+En el dataset completo, la mayoría de métodos sitúa el óptimo de clústeres entre 2 y 4.
+
+```{r}
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+nb <- NbClust::NbClust(
+  data = data_std,
+  distance = 'euclidean',
+  min.nc = 2,
+  max.nc = 15,
+  method = "kmeans",
+  index = "all"
+  )
+```
+:::
+
+::: {.callout-note title="2- Objeto `data_inliers_lab`" collapse="true"}
+En el dataset sin outliers, el número óptimo de clústeres está entre 2 y 3.
+
+```{r}
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos recortados
+nb_inliers <- NbClust::NbClust(
+  data = data_inliers_std,
+  distance = 'euclidean',
+  min.nc = 2,
+  max.nc = 15,
+  method = "kmeans",
+  index = "all"
+  )
+
+```
+:::
+
+#### Según criterios de estabilidad
+
+Dado que no podemos encontrar un nivel de clústeres óptimo en base a los resultados, exploraremos las opciones más repetidas:
+
+-   2, 3 y 4 clústeres para `data_lab`, y
+-   2 y 3 clústeres para `data_inliers_lab`.
+
+::: {.callout-note title="1- Objeto `data_lab`" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+data_km2 <- kmeans(data_std, centers = 2)
+data_km3 <- kmeans(data_std, centers = 3)
+data_km4 <- kmeans(data_std, centers = 4)
+```
+:::
+
+::: {.callout-note title="2- Objeto `data_inliers_lab`" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos recortados
+data_inliers_km2 <- kmeans(data_inliers_std, centers = 2)
+data_inliers_km3 <- kmeans(data_inliers_std, centers = 3)
+```
+:::
+
+### 05fg - Representación e interpretación de los resultados.
+
+::: {.callout-note title="1- Objeto `data_lab`" collapse="true"}
+#### Datos completos `data_lab`
+
+Resultados de los modelos de agrupación para `data_lab`
+
+-   Los modelos explican un porcentaje de la variabilidad total observada entre el $34.2\%$ y el $60.3\%$. El modelo con mejor explicación de los datos observados es el de $k=4$ grupos
+-   Todos los modelos explorados son algo difíciles de interpretar, porque los outliers tienden a agruparse en uno de los grupos del modelo, y dificultan la comprensión de la lógica de la agrupación.
+
+::: {.callout-caution title="1a- Agrupación $k = 2$" collapse="true"}
+##### Agrupación $k = 2$
+
+El resultado de la agrupación con 2 clústeres es el siguiente
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+data_km2
+table(data_km2$cluster)
+
+```
+
+La agrupación con dos clústeres explica un 34.2% de la variabilidad total. Ambos clústeres tienen aproximadamente el mismo número de elementos.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+cl_kcca2 <- flexclust::as.kcca(data_km2, data_std)
+flexclust::barplot(cl_kcca2)
+```
+
+-   Los dos clústeres se diferencian entre sí esencialmente por los valores del área de interés `Alcohol` del CDI: valores elevados frente a valores bajos
+
+Podemos explorar cómo se comporta cada cluster variable a variable con el siguiente gráfico
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+flexclust::barplot(cl_kcca2, bycluster = FALSE)
+```
+
+El resultado explica sólo un tercio de la variabilidad total, por lo que no es el ideal.
+:::
+
+::: {.callout-caution title="1b- Agrupación $k = 3$" collapse="true"}
+##### Agrupación $k = 3$
+
+La agrupación con tres clústeres explica un 53.9% de la variabilidad total. Los clústeres están muy desequilibrados, con uno de ellos con 3 elementos (los valores *outliers*)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+data_km3
+table(data_km3$cluster)
+
+```
+
+La presencia del grupo con los outliers (cluster 1) dificulta la interpretación visual de los otros dos grupos, tanto en el gráfico global como por variables
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+cl_kcca3 <- flexclust::as.kcca(data_km3, data_std)
+flexclust::barplot(cl_kcca3)
+
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+flexclust::barplot(cl_kcca3, bycluster = FALSE)
+
+```
+
+El resultado está genera una agrupación muy desbalanceada, por lo que tampoco parece el modelo óptimo.
+:::
+
+::: {.callout-caution title="1c- Agrupación $k = 4$" collapse="true"}
+##### Agrupación $k = 4$
+
+La agrupación con cuatro clústeres explica un 60.3% de la variabilidad total. De nuevo, una de las clases tiene muy pocos elementos (outliers)
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+data_km4
+table(data_km4$cluster)
+
+```
+
+El clúster que contiene los outliers también dificulta la interpretación de los grupos, aunque se intuye que se diferencian los siguientes cuatro grupos de estados en relación con los indicadores:
+
+-   Indicadores con valores bajos
+-   Indicadores con valores altos
+-   Indicadores con valores bajos en general, pero con valores muy altos en el número de adultos grandes bebedores (`HeavyDrinkingAdults`)
+-   *Outliers*
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+cl_kcca4 <- flexclust::as.kcca(data_km4, data_std)
+flexclust::barplot(cl_kcca4)
+
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+flexclust::barplot(cl_kcca4, bycluster = FALSE)
+```
+:::
+:::
+
+::: {.callout-note title="2- Objeto `data_inliers_lab`" collapse="true"}
+#### Datos recortados `data_inliers_lab`
+
+Resultados de los modelos de agrupación para `data_inliers_lab`
+
+-   Los modelos explican un porcentaje de la variabilidad total observada entre el $38.32\%$ y el $54\%$. El modelo con mejor explicación de los datos observados es el de $k=3$ grupos
+-   Los modelos con datos recortados explican un menor porcentaje de la variabilidad que los de datos completos; los outliers una capturan parte considerable de la información, y deben estudiarse con detalle.
+
+::: {.callout-caution title="1a- Agrupación $k = 2$" collapse="true"}
+##### Agrupación $k = 2$
+
+El resultado de la agrupación con 2 clústeres es el siguiente
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos recortados
+data_inliers_km2
+table(data_inliers_km2$cluster)
+
+```
+
+La agrupación con dos clústeres explica un 38.32% de la variabilidad total. El primer clúster tiene un poco más de elementos que el segundo.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos recortados
+cl_inliers_kcca2 <- flexclust::as.kcca(data_inliers_km2, data_inliers_std)
+flexclust::barplot(cl_inliers_kcca2)
+```
+
+-   Los dos clústeres se diferencian entre sí por los valores del área de interés `Alcohol` del CDI: valores elevados frente a valores bajos
+
+Podemos explorar cómo se comporta cada cluster variable a variable con el siguiente gráfico
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+flexclust::barplot(cl_inliers_kcca2, bycluster = FALSE)
+
+```
+
+El resultado explica un porcentaje muy pequeño de la variabilidad total, por lo que descartamos este modelo.
+:::
+
+::: {.callout-caution title="1b- Agrupación $k = 3$" collapse="true"}
+##### Agrupación $k = 3$
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos recortados
+data_inliers_km3
+table(data_inliers_km3$cluster)
+
+```
+
+La agrupación con dos clústeres explica un 54% de la variabilidad total. El primer cluster tiene más elementos que los otros dos juntos.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+
+## Datos totales
+cl_inliers_kcca3 <- flexclust::as.kcca(data_inliers_km3, data_inliers_std)
+flexclust::barplot(cl_inliers_kcca3)
+```
+
+-   El primer cluster agrupa estados con indicadores con bajores bajos para todas las variables.
+-   El segundo incluye aquellos estados con indicadores por encima de la media, excepto el número de adultos grandes bebedores, pero en los que la tasa de muerte ajustada por edad está por debajo de la media
+-   El tercero agrupa a los estados con indicadores por encima de la media, incluido el porcentaje de adultos grandes bebedores, y en el que la tasa de muerte también es alta.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+flexclust::barplot(cl_inliers_kcca3, bycluster = FALSE)
+
+```
+:::
+:::
+
+### 05fh - Evaluación de la importancia de las variables
+
+::: {.callout-note title="1- Objeto `data_lab`" collapse="true"}
+Los resultados de la evaluación de la importancia de las variables para los modelos para datos completos fueron los siguientes:
+
+-   En los modelos de 2 y 3 clústeres para datos completos, las variables más importantes para establecer la agrupación fueron las relacionadas con las características de las borracheras (`BingeDrinkingIntensityAdults`, `BingeDrinkingPrevalenceAdults`, `BingeDrinkingFrecuencyAdults`)
+-   Para el modelo con 4 clústeres, la variable más importante con diferencia fue la de grandes bebedores (`HeavyDrinkingAdults`), seguida de las tres variables relacionadas con borracheras (`BingeDrinkingIntensityAdults`, `BingeDrinkingPrevalenceAdults`, `BingeDrinkingFrecuencyAdults`)
+
+::: {.callout-caution title="1a- Agrupación k = 2" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+importance <- FeatureImpCluster::FeatureImpCluster(
+  cl_kcca2, 
+  data.table::as.data.table(data_std)
+  )
+flexclust::plot(importance)
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos recortados
+importance_inliers <- FeatureImpCluster::FeatureImpCluster(
+  cl_inliers_kcca2, 
+  data.table::as.data.table(data_inliers_std))
+flexclust::plot(importance_inliers)
+```
+
+En el modelo de 2 clústeres para datos completos, las variables más importantes para establecer la agrupación fueron las relacionadas con las características de las borracheras (`BingeDrinkingIntensityAdults`, `BingeDrinkingPrevalenceAdults`, `BingeDrinkingFrecuencyAdults`).
+:::
+
+::: {.callout-caution title="1b- Agrupación k = 3" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+importance <- FeatureImpCluster::FeatureImpCluster(
+  cl_kcca3, 
+  data.table::as.data.table(data_std)
+  )
+flexclust::plot(importance)
+
+## Datos recortados
+importance_inliers <- FeatureImpCluster::FeatureImpCluster(
+  cl_inliers_kcca3, 
+  data.table::as.data.table(data_inliers_std))
+flexclust::plot(importance_inliers)
+```
+
+En el modelo de 3 clústeres para datos completos, las variables más importantes para establecer la agrupación fueron las relacionadas con las características de las borracheras (`BingeDrinkingIntensityAdults`, `BingeDrinkingPrevalenceAdults`, `BingeDrinkingFrecuencyAdults`).
+:::
+
+::: {.callout-caution title="1c- Agrupación k = 4" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+importance <- FeatureImpCluster::FeatureImpCluster(
+  cl_kcca4, 
+  data.table::as.data.table(data_std)
+  )
+flexclust::plot(importance)
+
+```
+
+En el modelo con 4 clústeres, la variable más importante con diferencia fue la de grandes bebedores (`HeavyDrinkingAdults`), seguida de las tres variables relacionadas con borracheras (`BingeDrinkingIntensityAdults`, `BingeDrinkingPrevalenceAdults`, `BingeDrinkingFrecuencyAdults`)
+:::
+:::
+
+::: {.callout-note title="2- Objeto `data_inliers_lab`" collapse="true"}
+Los resultados de la evaluación de la importancia de las variables para los modelos para datos recortados fueron los siguientes:
+
+-   En el modelo de 2 clústeres para datos recortados, las variables más importantes para establecer la agrupación fueron las relacionadas con las características de las borracheras (`BingeDrinkingIntensityAdults`, `BingeDrinkingPrevalenceAdults`, `BingeDrinkingFrecuencyAdults`)
+-   Para el modelo con 3 clústeres, las variables más importantes para establecer la agrupación fueron las relacionadas el número de muertes relacionadas con alcohol (`Deaths` y `PercentageOfTotalDeaths`), seguido de la prevalencia de borracheras (`BingeDrinkingPrevalenceAdults`).
+
+::: {.callout-caution title="1a- Agrupación k = 2" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos recortados
+importance_inliers <- FeatureImpCluster::FeatureImpCluster(
+  cl_inliers_kcca2, 
+  data.table::as.data.table(data_inliers_std))
+flexclust::plot(importance_inliers)
+```
+
+En el modelo de 2 clústeres para datos recortados, las variables más importantes para establecer la agrupación fueron las relacionadas con las características de las borracheras (`BingeDrinkingIntensityAdults`, `BingeDrinkingPrevalenceAdults`, `BingeDrinkingFrecuencyAdults`).
+:::
+
+::: {.callout-caution title="1b- Agrupación k = 3" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos recortados
+importance_inliers <- FeatureImpCluster::FeatureImpCluster(
+  cl_inliers_kcca3, 
+  data.table::as.data.table(data_inliers_std))
+flexclust::plot(importance_inliers)
+```
+
+En el modelo de 3 clústeres para datos recortados, las variables más importantes para establecer la agrupación fueron las relacionadas el número de muertes relacionadas con alcohol (`Deaths` y `PercentageOfTotalDeaths`), seguido de la prevalencia de borracheras (`BingeDrinkingPrevalenceAdults`).
+:::
+:::
+
+### 05fi - Visualización de las agrupaciones cluster
+
+::: {.callout-caution title="1a- Modelos $k = 2$" collapse="true"}
+#### Modelos con $k = 2$
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+factoextra::fviz_cluster(
+  data_km2, 
+  data_std,
+  labelsize = 5,
+  main = "k=2 grupos, datos completos",
+  geom = "point"
+) +
+  ggrepel::geom_text_repel(
+    label = paste(
+      data_lab$State, 
+      data_lab$AgeAdjustedDeathRate, 
+      sep = "_"),
+    size = 1.5)
+
+
+```
+
+El modelo de 2 clústeres en los datos completos está fuertemente influenciado por los outliers, y crea unos clústers con poco sentido.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+factoextra::fviz_cluster(
+  data_inliers_km2, 
+  data_inliers_std,
+  labelsize = 5,
+  main = "k=2 grupos, datos recortados (sin outliers)",
+  geom = "point"
+) +
+  ggrepel::geom_text_repel(
+    label = paste(
+      data_inliers_lab$State, 
+      data_inliers_lab$AgeAdjustedDeathRate, 
+      sep = "_"),
+    size = 1.5)
+
+
+```
+
+Al eliminar los outliers, el modelo agrupa los datos en dos grandes bloques, sin solapamientos
+:::
+
+::: {.callout-caution title="Modelos con $k=3$" collapse="true"}
+#### Modelos con $k=3$
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+factoextra::fviz_cluster(
+  data_km3, 
+  data_std,
+  labelsize = 5,
+  main = "k=3 grupos (datos completos)",
+  geom = "point"
+  ) +
+  ggrepel::geom_text_repel(
+    label = paste(
+      data_lab$State, 
+      data_lab$AgeAdjustedDeathRate, 
+      sep = "_"),
+size = 1.5)
+
+
+```
+
+El modelo de tres clústeres para los datos completos separa un grupo con los outliers, y otros dos grupos dentro del resto de los datos.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos recortados
+factoextra::fviz_cluster(
+  data_inliers_km3, 
+  data_inliers_std,
+  labelsize = 5,
+  main = "k=3 grupos, datos recortados (sin outliers)",
+  geom = "point"
+  ) +
+  ggrepel::geom_text_repel(
+    label = paste(
+      data_inliers_lab$State, 
+      data_inliers_lab$AgeAdjustedDeathRate, 
+      sep = "_"),
+    size = 1.5)
+```
+
+Al eliminar los outliers, el modelo de tres clústeres es capaz de separar tres grupos de datos con una cierta coherencia visual.
+:::
+
+::: {.callout-caution title="Modelos con $k=4$" collapse="true"}
+#### Modelo con $k=4$
+
+El modelo de cuatro clústeres para los datos completos separa un grupo con los outliers, y dos de los grupos presentan un alto grado de solapamiento en la representación bidimensional.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+factoextra::fviz_cluster(
+  data_km4, 
+  data_std,
+  labelsize = 5,
+  main = "k=4 grupos (datos completos)",
+  geom = "point"
+  ) +
+  ggrepel::geom_text_repel(
+    label = paste(
+      data_lab$State, 
+      data_lab$AgeAdjustedDeathRate, 
+      sep = "_"),
+    size = 1.5)
+
+```
+
+Al representarlo en tres dimensiones, se observa que el solapamiento es menor. Por ejemplo, eligiendo las tres variables con mayor importancia para la agrupación del modelo $k = 4$, se puede obtener este gráfico interactivo:
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+df <- data_lab[1:10]
+df$cluster <- factor(data_km4$cluster)
+
+p <- plotly::plot_ly(
+  df, 
+  x = ~HeavyDrinkingAdults, 
+  y = ~BingeDrinkingIntensityAdults,
+  z = ~BingeDrinkingFrecuencyAdults, 
+  mode = 'markers',
+  color = ~cluster,
+  hoverinfo = 'text',
+  text = ~paste(
+    '</br> State:', State,
+    '</br> Sex:', Sex,
+    '</br> Heavy Drinking Adults:', HeavyDrinkingAdults,
+    '</br> Binge Drinking Intensity Adults:', BingeDrinkingIntensityAdults,
+    '</br> Binge Drinking Frecuency Adults:', BingeDrinkingFrecuencyAdults
+    )
+  ) |> 
+  plotly::add_markers(size = 1.5)
+
+p
+```
+:::
+
+### 05fj - Validación de la agrupación
+
+#### Interna
+
+Para la validación interna se utilizó el diagrama de silueta, con los siguientes resultados:
+
+| Modelo | Datos      | Evaluación del gráfico de silueta                                                                                           |
+|--------|------------|-----------------------------------------------------------------------------------------------------------------------------|
+| $k=2$  | Completos  | Los dos clústeres tienen un rendimiento aceptable, aunque en el caso del cluster 1 es inferior a silueta media.             |
+| $k=3$  | Completos  | Dos de los clústeres, tienen un rendimiento bueno, y el cluster más pequeño tiene un rendimiento muy inferior a lo esperado |
+| $k=4$  | Completos  | Sólo los clústeres 2 y 3 superaron la silueta media; todos los demás quedaron por debajo de lo deseable.                    |
+| $k=2$  | Recortados | Ambos dos clústeres tienen un rendimiento bueno, por encima de la silueta media                                             |
+| $k=3$  | Recortados | Bastante equilibrado; todos los clústeres tienen un ancho de silueta medio igual al ancho de silueta medio.                 |
+
+::: {.callout-caution title="1- Modelos $k=2$" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+
+sk2 <- cluster::silhouette(
+  data_km2$cluster, 
+  data_dist) 
+sk2_mean <- mean(sk2[,3])
+
+# gráfico de silueta
+flexclust::plot(
+  sk2, 
+  main = "Silhouette plot - Kmeans k=2 (datos completos)",
+  cex.names = 0.8, 
+  col = 1:2, 
+  nmax = 100,
+  do.clust.stat = TRUE)
+abline(v = sk2_mean, col = "darkblue", lty = 3)
+
+```
+
+Para el modelo de $k=2$ con datos completos, los dos clústeres tienen un rendimiento aceptable, aunque en el caso del cluster 1 es inferior a silueta media.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+
+sk2_inliers <- cluster::silhouette(
+  data_inliers_km2$cluster, 
+  data_inliers_dist) 
+sk2_inliers_mean <- mean(sk2_inliers[,3])
+
+# gráfico de silueta
+flexclust::plot(
+  sk2_inliers, 
+  main = "Silhouette plot - Kmeans k=2 (datos recortados, sin outliers)",
+  cex.names = 0.8, 
+  col = 1:2, 
+  nmax = 100,
+  do.clust.stat = TRUE)
+abline(v = sk2_inliers_mean, col = "darkblue", lty = 3)
+
+```
+
+Para el modelo de $k=2$ con datos recortados, ambos dos clústeres tienen un rendimiento bueno, por encima de la silueta media.
+:::
+
+::: {.callout-caution title="2- Modelos $k=3$" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+
+sk3 <- cluster::silhouette(
+  data_km3$cluster, 
+  data_dist) 
+sk3_mean <- mean(sk3[,3])
+
+# gráfico de silueta
+flexclust::plot(
+  sk3, 
+  main = "Silhouette plot - Kmeans k=3 (datos completos)",
+  cex.names = 0.8, 
+  col = 1:3, 
+  nmax = 100,
+  do.clust.stat = TRUE)
+abline(v = sk3_mean, col = "darkblue", lty = 3)
+
+```
+
+Para el modelo de $k=3$ con datos completos, dos de los clústeres, tienen un rendimiento bueno, y el cluster más pequeño tiene un rendimiento muy inferior a lo esperado.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+
+sk3_inliers <- cluster::silhouette(
+  data_inliers_km3$cluster, 
+  data_inliers_dist) 
+sk3_inliers_mean <- mean(sk3_inliers[,3])
+
+# gráfico de silueta
+flexclust::plot(
+  sk3_inliers, 
+  main = "Silhouette plot - Kmeans k=3 (datos recortados, sin outliers)",
+  cex.names = 0.8, 
+  col = 1:3, 
+  nmax = 100,
+  do.clust.stat = TRUE)
+abline(v = sk3_inliers_mean, col = "darkblue", lty = 3)
+
+```
+
+El modelo de $k=3$ con datos recortados es bastante equilibrado. Todos los clústeres tienen un ancho de silueta medio igual al ancho de silueta medio.
+:::
+
+::: {.callout-caution title="3- Modelos $k=4$" collapse="true"}
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+
+sk4 <- cluster::silhouette(
+  data_km4$cluster, 
+  data_dist) 
+sk4_mean <- mean(sk4[,3])
+
+# gráfico de silueta
+flexclust::plot(
+  sk4, 
+  main = "Silhouette plot - Kmeans k=4 (datos completos)",
+  cex.names = 0.8, 
+  col = 1:4, 
+  nmax = 100,
+  do.clust.stat = TRUE)
+abline(v = sk4_mean, col = "darkblue", lty = 3)
+
+```
+
+Para el modelo de $k=4$ con datos completos, sólo los clústeres 2 y 3 superaron la silueta media. Todos los demás quedaron por debajo de lo deseable.
+:::
+
+#### Externa
+
+Se utilizaron las siguientes variables para la validación externa de las agrupaciones:
+
+-   Para los modelos $k=2$, se utilizó la variable `Sex`.
+-   Para los modelos $k=3$ se creó una variable instrumental que discretizaba en tres niveles (alta, media y baja) la tasa de mortalidad ajustada por edad `AgeAdjustedDeathRate`.
+-   Para el modelo $k=4$ se creó una variable instrumental que discretizaba en cuatro niveles (muy alta, alta, baja y muy baja) la tasa de mortalidad ajustada por edad `AgeAdjustedDeathRate`.
+
+Los dos modelos $k=2$, tanto para datos completos como recortados, se ajustan bastante bien a los niveles de la variable `Sex`, por lo que capturan una información similar a esta variable.
+
+Los modelos $k=3$ y $k=4$ se relacionan mal con la variable instrumental creada discretizando los valores de la variable `AgeAdjustedDeathRate`, con lo que es razonable suponer que capturan información no contenida en estas variable.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Creación de las variables instrumentales para data_lab
+
+# Variable instrumental de 2 niveles
+data_lab$Sex <- as.factor(data_lab$Sex)
+
+# Variable instrumental de 3 niveles
+AgeAdjustedDeathRate_3levels_cuts <- recipes::discretize(
+  data_lab$AgeAdjustedDeathRate,
+  cuts = 3,
+  labels = c('Mortalidad baja', 'Mortalidad media', 'Mortalidad alta'),
+  prefix = ''
+)
+data_lab$AgeAdjustedDeathRate_fct3 <- 
+  predict(AgeAdjustedDeathRate_3levels_cuts, data_lab$AgeAdjustedDeathRate) |> 
+  as.factor()
+
+# Variable instrumental de 4 niveles
+AgeAdjustedDeathRate_4levels_cuts <- recipes::discretize(
+  data_lab$AgeAdjustedDeathRate,
+  cuts = 4,
+  labels = c('Mortalidad muy baja', 'Mortalidad baja', 'Mortalidad alta',  'Mortalidad muy alta'),
+  prefix = ''
+)
+data_lab$AgeAdjustedDeathRate_fct4 <- 
+  predict(AgeAdjustedDeathRate_4levels_cuts, data_lab$AgeAdjustedDeathRate) |> 
+  as.factor()
+
+# Limpieza de variables temporales intermedias
+rm(list = c(
+  'AgeAdjustedDeathRate_3levels_cuts',
+  'AgeAdjustedDeathRate_4levels_cuts'
+))
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Creación de las variables instrumentales para data_inliers_lab
+
+# Variable instrumental de 2 niveles
+data_inliers_lab$Sex <- as.factor(data_inliers_lab$Sex)
+
+# Variable instrumental de 3 niveles
+AgeAdjustedDeathRate_inliers_3levels_cuts <- recipes::discretize(
+  data_inliers_lab$AgeAdjustedDeathRate,
+  cuts = 3,
+  labels = c('Mortalidad baja', 'Mortalidad media', 'Mortalidad alta'),
+  prefix = ''
+)
+data_inliers_lab$AgeAdjustedDeathRate_fct3 <- 
+  predict(
+    AgeAdjustedDeathRate_inliers_3levels_cuts, 
+    data_inliers_lab$AgeAdjustedDeathRate
+    ) |> 
+  as.factor()
+
+# Limpieza de variables temporales intermedias
+rm(list = c(
+  'AgeAdjustedDeathRate__inliers_3levels_cuts'
+))
+```
+
+::: {.callout-caution title="1 - Modelos con $k=2$" collapse="true"}
+##### Modelos de 2 categorías
+
+Ambos modelos cluster (tanto el de datos completos como el de datos recortados) separan perfectamente a las mujeres, y se equivocan con un pequeño porcentaje de los hombres ($6\%$ en datos completos, $7.3\%$ en datos recortados):
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Modelo de datos completos
+table(
+  data_lab$Sex,
+  data_km2$cluster
+  )
+
+# Modelo de datos recortados
+table(
+  data_inliers_lab$Sex,
+  data_inliers_km2$cluster
+  )
+
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+factoextra::fviz_cluster(
+  data_km2, 
+  data_std,
+  labelsize = 5,
+  # main = "k=2 grupos",
+  geom = "point",
+  ggtheme = ggplot2::theme_bw()
+  ) +
+  ggplot2::ggtitle(
+    label = 'Modelo con K=2 grupos',
+    subtitle = 'Conjunto de datos completo (con outliers)'
+  ) +
+  ggrepel::geom_text_repel(
+    label = paste(
+      data_lab$State,
+      data_lab$Sex,
+      sep = "_"),
+    size = 1.5,
+    colour = c("darkgreen", 'darkred')[data_lab$Sex])
+```
+
+El modelo con datos completos separa hombres y mujeres, sobreajustándose por los outliers detectados. Comete errores en la clasificación de tres observaciones de hombres, con valores anormalmente bajos de los indicadores relacionados con el alcohol.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Modelo de datos completos
+factoextra::fviz_cluster(
+  data_inliers_km2, 
+  data_inliers_std,
+  labelsize = 5,
+  # main = "k=2 grupos",
+  geom = "point",
+  ggtheme = ggplot2::theme_bw()
+  ) +
+  ggplot2::ggtitle(
+    label = 'Modelo con K=2 grupos',
+    subtitle = 'Conjunto de datos recortado (sin outliers)'
+  ) +
+  ggrepel::geom_text_repel(
+    label = paste(
+      data_inliers_lab$State,
+      data_inliers_lab$Sex,
+      sep = "_"),
+    size = 1.5,
+    colour = c("darkred", 'darkblue')[data_inliers_lab$Sex])
+```
+
+El modelo con datos recortados separa hombres y mujeres, sin el sobreajuste impuesto por los outliers. Comete errores en la clasificación de tres observaciones de hombres, con valores anormalmente bajos de los indicadores relacionados con el alcohol.
+
+Para ver el nivel de acuerdo de la agrupación con la clasificación, utilizamos el índice de Rand
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Datos completos
+rand2 <- fpc::cluster.stats(
+  d = data_dist,
+  alt.clustering = as.numeric(data_lab$Sex),
+  clustering = as.numeric(data_km2$cluster))
+
+rand2$corrected.rand
+
+# Datos recortados
+rand2_inliers <- fpc::cluster.stats(
+  d = data_inliers_dist,
+  alt.clustering = as.numeric(data_inliers_lab$Sex),
+  clustering = as.numeric(data_inliers_km2$cluster))
+
+rand2_inliers$corrected.rand
+```
+
+Se observan unos valores elevados del estadístico de Rand, por lo que las observaciones incluidas en los clústeres son muy similares entre sí, tanto para los modelos de datos completos como para los de datos recortados.
+:::
+
+::: {.callout-caution title="2 - Modelos con $k=3$" collapse="true"}
+##### Modelos de 3 categorías
+
+Ambos modelos cluster (tanto el de datos completos como el de datos recortados) separan mal los tres niveles de la variable `AgeAdjustedDeathRate_fct3`, con un importante número de discordancias entre lo esperado y lo observado:
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Modelo de datos completos
+table(
+  data_lab$AgeAdjustedDeathRate_fct3,
+  data_km3$cluster
+  )
+
+# Modelo de datos recortados
+table(
+  data_inliers_lab$AgeAdjustedDeathRate_fct3,
+  data_inliers_km3$cluster
+  )
+
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+factoextra::fviz_cluster(
+  data_km3, 
+  data_std,
+  labelsize = 5,
+  # main = "k=2 grupos",
+  geom = "point",
+  ggtheme = ggplot2::theme_bw()
+  ) +
+  ggplot2::ggtitle(
+    label = 'Modelo con K=3 grupos',
+    subtitle = 'Conjunto de datos completo (con outliers)'
+  ) +
+  ggrepel::geom_text_repel(
+    label = paste(
+      data_lab$State,
+      data_lab$AgeAdjustedDeathRate_fct3,
+      sep = "_"),
+    size = 1.5,
+    colour = c("darkred", 'darkgreen', 'darkblue')[data_lab$AgeAdjustedDeathRate_fct3])
+```
+
+El modelo de datos completos identifica razonablemente bien a las observaciones con mortalidad alta, pero a costa de equivocarse mucho en las que tiene mortalidad media y baja..
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Modelo de datos completos
+factoextra::fviz_cluster(
+  data_inliers_km3, 
+  data_inliers_std,
+  labelsize = 5,
+  geom = "point",
+  ggtheme = ggplot2::theme_bw()
+  ) +
+  ggplot2::ggtitle(
+    label = 'Modelo con K=3 grupos',
+    subtitle = 'Conjunto de datos recortado (sin outliers)'
+  ) +
+  ggrepel::geom_text_repel(
+    label = paste(
+      data_inliers_lab$State,
+      data_inliers_lab$AgeAdjustedDeathRate_fct3,
+      sep = "_"),
+    size = 1.5,
+    colour = c("darkred", 'darkgreen', 'darkblue')[data_inliers_lab$AgeAdjustedDeathRate_fct3])
+```
+
+El modelo con datos recortados no está separando adecuadamente los niveles de la variable `AgeAdjustedDeathRate_fct3`. La información separada en los clústeres tiene poco que ver con los niveles de esta variable categórica.
+
+Para ver el nivel de acuerdo de la agrupación con la clasificación, utilizamos el índice de Rand
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Datos completos
+rand3 <- fpc::cluster.stats(
+  d = data_dist,
+  alt.clustering = as.numeric(data_lab$AgeAdjustedDeathRate_fct3),
+  clustering = as.numeric(data_km3$cluster))
+
+rand3$corrected.rand
+
+# Datos recortados
+rand3_inliers <- fpc::cluster.stats(
+  d = data_inliers_dist,
+  alt.clustering = as.numeric(data_inliers_lab$AgeAdjustedDeathRate_fct3),
+  clustering = as.numeric(data_inliers_km3$cluster))
+
+rand3_inliers$corrected.rand
+```
+
+Se observan unos valores pobres del estadístico de Rand, por lo que las observaciones incluidas en los clústeres son muy distintas entre sí, tanto para los modelos de datos completos como para los de datos recortados. Los modelos no están separando la información contenida en la variable `AgeAdjustedDeathRate_fct3`.
+:::
+
+::: {.callout-caution title="3 - Modelo con $k=4$" collapse="true"}
+##### Modelo de 4 categorías
+
+Ambos modelos cluster (tanto el de datos completos como el de datos recortados) separan mal los tres niveles de la variable `AgeAdjustedDeathRate_fct3`, con un importante número de discordancias entre lo esperado y lo observado:
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Modelo de datos completos
+table(
+  data_lab$AgeAdjustedDeathRate_fct4,
+  data_km4$cluster
+  )
+
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+factoextra::fviz_cluster(
+  data_km4, 
+  data_std,
+  labelsize = 5,
+  geom = "point",
+  ggtheme = ggplot2::theme_bw()
+  ) +
+  ggplot2::ggtitle(
+    label = 'Modelo con K=4 grupos',
+    subtitle = 'Conjunto de datos completo (con outliers)'
+  ) +
+  ggrepel::geom_text_repel(
+    label = paste(
+      data_lab$State,
+      data_lab$AgeAdjustedDeathRate_fct4,
+      sep = "_"),
+    size = 1.5,
+    colour = c(
+      "darkred", 
+      'darkgreen', 
+      'darkblue', 
+      'darkviolet'
+      )[data_lab$AgeAdjustedDeathRate_fct4])
+```
+
+El modelo de datos completos para $k=4$ no identifica correctamente los niveles de la variable `AgeAdjustedDeathRate_fct4`.
+
+Para ver el nivel de acuerdo de la agrupación con la clasificación, utilizamos el índice de Rand
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Datos completos
+rand4 <- fpc::cluster.stats(
+  d = data_dist,
+  alt.clustering = as.numeric(data_lab$AgeAdjustedDeathRate_fct4),
+  clustering = as.numeric(data_km4$cluster))
+
+rand4$corrected.rand
+
+```
+
+Se observa un valor bajo del estadístico de Rand, por lo que las observaciones incluidas en los clústeres son muy distintas entre sí. El modelo no están separando la información contenida en la variable `AgeAdjustedDeathRate_fct4`.
+:::
+
+### 05fk - Resumen de resultados obtenidos
+
+-   En ambos supuestos (datos totales y recortados), se observó una tendencia a la agrupación, tanto estadísticamente (Hopkins $<0.5$), por lo que se justifica realizar un análisis de agrupación.
+-   Para nuestro caso se utilizó un análisis cluster no jerárquico. En la fase de análisis exploratorio se detectó la presencia de *outliers*, por lo que se replicó el análisis con o sin los datos, para valorar la influencia de los mismos.
+-   Se determinó que el número óptimo de clústeres se encontraba entre 2 y 4, para el conjunto de datos completo, y entre 2 y 3, para el modelo recortado sin *outliers*.
+-   Se crearon cinco modelos de agrupación, utilizando el método $k$-means, 3 para los datos completos, y 2 para los datos recortados, para los valores óptimos de cluster identificados.
+-   Respecto a la importancia de las variables para establecer la agrupación:
+    -   En los modelos de 2 y 3 clústeres para datos completos, fueron las relacionadas con las características de las borracheras (`BingeDrinkingIntensityAdults`, `BingeDrinkingPrevalenceAdults`, `BingeDrinkingFrecuencyAdults`)
+    -   Para el modelo con 4 clústeres, fue la de grandes bebedores (`HeavyDrinkingAdults`), seguida de las tres variables relacionadas con borracheras (`BingeDrinkingIntensityAdults`, `BingeDrinkingPrevalenceAdults`, `BingeDrinkingFrecuencyAdults`)
+-   Visualmente, los clústeres de los modelos son capaces de agrupar los datos sin solapamientos. El modelo de $k=4$ presenta solapamientos en la representación en 2-D, pero evidencia buena capacidad discriminatoria en los modelos 3-D.
+-   Respecto a la evaluación de la validez de los modelos:
+    -   En lo que concierne a la validez interna, los modelos con mejor resultado han sido los $K=2$ y $K=3$ para datos recortados.
+    -   En lo tocante a validación externa:
+        -   Los dos modelos $k=2$, tanto para datos completos como recortados, se ajustan bastante bien a los niveles de la variable `Sex`, por lo que capturan una información similar a esta variable.
+        -   Los modelos $k=3$ y $k=4$ se relacionan mal con la variable instrumental creada discretizando los valores de la variable `AgeAdjustedDeathRate`, con lo que es razonable suponer que capturan información no contenida en estas variable.
+
+## Salidas del subproceso
+
+Se incorporaron los resultados de los modelos a los respectivos datasets, y se crearon dos nuevos objetos con la información del cluster:
+
+-   `data_cluster`, incorporando los modelos $k=2$, $k=3$ y $k=4$ a los datos completos, y
+-   `data_inliers_cluster`, incorporando los modelos $k=2$ y $k=3$ a los datos recortados
+
+```{r}
+#| code-fold: true
+#| output: false
+#| eval: false
+
+## Añadimos la clasificación cluster a los datos de trabajo
+data_lab$cluster2 <- data_km2$cluster
+data_lab$cluster3 <- data_km3$cluster
+data_lab$cluster4 <- data_km4$cluster
+
+## Añadimos la clasificación cluster a los datos de trabajo (recortados)
+data_inliers_lab$cluster2 <- data_inliers_km2$cluster
+data_inliers_lab$cluster3 <- data_inliers_km3$cluster
+
+## Grabamos los nuevos dtos
+saveRDS(
+  data_lab,
+  file = here::here('data', 'lab', 'data_cluster.rds')
+) 
+
+saveRDS(
+  data_inliers_lab,
+  file = here::here('data', 'lab', 'data_inliers_cluster.rds')
+) 
+
+```

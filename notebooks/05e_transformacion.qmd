@@ -1,0 +1,393 @@
+---
+subtitle: "Material y métodos"
+author: Teodoro José Martínez Arán
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+# Subproceso 04 - Transformación {.unnumbered}
+
+## Descripción del subproceso
+
+Subproceso destianado a convertir los datos crudos ya limpiados al formato o estructura que requiere el tipo de análisis que se va a realizar en nuestros datos.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Configuración
+## Establecer una semilla aleatoria para el análisis
+set.seed(2024)
+## Impedir que los números grandes se muestren con notación científica
+options(scipen = 999)
+
+# Ingesta
+data <- readRDS(
+  here::here('data', 'lab', 'data.rds')
+  ) 
+data_overall <- readRDS(
+  here::here('data', 'lab', 'data_overall.rds')
+  ) 
+data_gender <- readRDS(
+  here::here('data', 'lab', 'data_gender.rds')
+  ) 
+```
+
+## Acciones del subproceso
+
+Se realizaron las siguientes tareas de transformación:
+
+-   4a - Tratamiento de valores faltantes
+-   4b - Tratamiento de valores atípicos (*outliers*)
+
+### 4a - Tratamiento de valores faltantes
+
+Se creo un dataset de trabajo sin datos faltantes, una para cada dataset de interés.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+## Datos totales
+data_lab         <- na.omit(data)
+data_gender_lab  <- na.omit(data_gender)
+data_overall_lab <- na.omit(data_overall)
+
+## Limpieza de datos intermedios
+rm(list = c(
+  'data',
+  'data_gender',
+  'data_overall'
+  )
+  )
+```
+
+Tras la omisión de `NA`'s, los dos datasets `data_lab` y `data_gender_lab` son idénticos, y sólo difieren en los atributos que se han ido creando durante el proceso de limpieza. Por tanto, podemos trabajar exclusivamente con `data_lab` (para datos por sexos) y `data_overall` (para datos globales):
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+arsenal::comparedf(data_lab, data_gender_lab)
+```
+
+### 4b - Tratamiento de valores atípicos (*outliers*)
+
+Las observaciones con valores extremos para las variables estudiadas podrían ser muy interesantes para nuestro análisis, porque pueden contener información sobre los factores de riesgo más asociados a la mortalidad por alcohol.
+
+::: {.callout-note title="1- Objeto `data_lab`" collapse="true"}
+En el subproceso de EDA se identificaron problemas de valores atípicos en cinco variables del objeto `data`: `Deaths`, `Population`, `AgeAdjustedDeathRate` y `PercentageOfTotalDeaths`).
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Diagnóstico de outliers
+dlookr::diagnose_outlier(data_lab)
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+data_lab |> ggplot2::ggplot(
+  ggplot2::aes(
+  x = Sex,
+  y = HeavyDrinkingAdults,
+  fill = Sex
+  )
+) + 
+  ggplot2::geom_boxplot() +
+  ggside::geom_ysidedensity() +
+  ggplot2::theme_bw()
+
+
+data_lab |> ggplot2::ggplot(
+  ggplot2::aes(
+  x = Sex,
+  y = BingeDrinkingFrecuencyAdults,
+  fill = Sex
+  )
+) + 
+  ggplot2::geom_boxplot() +
+  ggside::geom_ysidedensity() +
+  ggplot2::theme_bw()
+
+data_lab |> ggplot2::ggplot(
+  ggplot2::aes(
+  x = Sex,
+  y = BingeDrinkingIntensityAdults,
+  fill = Sex
+  )
+) + 
+  ggplot2::geom_boxplot() +
+  ggside::geom_ysidedensity() +
+  ggplot2::theme_bw()
+
+data_lab |> ggplot2::ggplot(
+  ggplot2::aes(
+  x = Sex,
+  y = BingeDrinkingPrevalenceAdults,
+  fill = Sex
+  )
+) + 
+  ggplot2::geom_boxplot() +
+  ggside::geom_ysidedensity() +
+  ggplot2::theme_bw()
+```
+
+Se crearon dos conjuntos de datos para poder realizar el análisis de agrupación con y sin datos atípicos.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Valores extremos por variable
+outliersDeaths <- boxplot.stats(data_lab$Deaths)$out
+outliersPopulation <- boxplot.stats(data_lab$Population)$out
+outliersAgeAdjustedDeathRate <- boxplot.stats(data_lab$AgeAdjustedDeathRate)$out
+outliersPercentageOfTotalDeaths <- boxplot.stats(data_lab$PercentageOfTotalDeaths)$out
+outliersHeavyDrinkingAdults <- boxplot.stats(data_lab$HeavyDrinkingAdults)$out
+
+# Índice de los outliers
+idxOutliersDeaths <- 
+  which(data_lab$Deaths %in% outliersDeaths)
+idxOutliersPopulation <- 
+  which(data_lab$Population %in% outliersPopulation)
+idxOutliersAgeAdjustedDeathRate <- 
+  which(data_lab$AgeAdjustedDeathRate %in% outliersAgeAdjustedDeathRate)
+idxOutlierPercentageOfTotalDeaths <- 
+  which(data_lab$PercentageOfTotalDeaths %in% outliersPercentageOfTotalDeaths)
+idxOutlierHeavyDrinkingAdults <- 
+  which(data_lab$HeavyDrinkingAdults %in% outliersHeavyDrinkingAdults)
+
+# Vector de ayuda para identificar outliers
+idxOutlierAll <- c(
+  idxOutliersDeaths, 
+  idxOutlierHeavyDrinkingAdults, 
+  idxOutlierPercentageOfTotalDeaths, 
+  idxOutliersAgeAdjustedDeathRate, 
+  idxOutliersPopulation
+  ) |> 
+  unique() |> 
+  sort()
+
+esOutlier <- 1:nrow(data_lab) %in% idxOutlierAll
+
+# Dataset sin outliers
+data_outliers_lab <- data_lab[esOutlier,]
+data_inliers_lab <- data_lab[!esOutlier,]
+
+data_inliers_lab$Sex <- as.factor(data_inliers_lab$Sex)
+data_inliers_lab$Sex <- as.factor(data_inliers_lab$Sex)
+```
+:::
+
+::: {.callout-note title="2- Objeto `data_overall`" collapse="true"}
+En el subproceso de EDA se identificaron problemas de valores atípicos en cinco variables del objeto `data_overall`: `Deaths`, `Population`, `AgeAdjustedDeathRate` y `PercentageOfTotalDeaths` y `BingeDrinkingFrecuencyAdults`).
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Diagnóstico de outliers
+dlookr::diagnose_outlier(data_overall_lab)
+```
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+data_overall_lab |> ggplot2::ggplot(
+  ggplot2::aes(
+  x = State,
+  y = Deaths
+  )
+) + 
+  ggplot2::geom_boxplot() +
+  ggside::geom_ysidedensity() +
+  ggplot2::theme_bw()
+
+
+data_overall_lab |> ggplot2::ggplot(
+  ggplot2::aes(
+  x = State,
+  y = Population
+  )
+) + 
+  ggplot2::geom_boxplot() +
+  ggside::geom_ysidedensity() +
+  ggplot2::theme_bw()
+
+data_overall_lab |> ggplot2::ggplot(
+  ggplot2::aes(
+  x = State,
+  y = AgeAdjustedDeathRate
+  )
+) + 
+  ggplot2::geom_boxplot() +
+  ggside::geom_ysidedensity() +
+  ggplot2::theme_bw()
+
+data_overall_lab |> ggplot2::ggplot(
+  ggplot2::aes(
+  x = State,
+  y = PercentageOfTotalDeaths
+  )
+) + 
+  ggplot2::geom_boxplot() +
+  ggside::geom_ysidedensity() +
+  ggplot2::theme_bw()
+
+data_overall_lab |> ggplot2::ggplot(
+  ggplot2::aes(
+  x = State,
+  y = BingeDrinkingFrecuencyAdults
+  )
+) + 
+  ggplot2::geom_point() +
+  ggside::geom_ysidedensity() +
+  ggplot2::theme_bw()
+```
+
+Se crearon dos conjuntos de datos para poder realizar el análisis de agrupación con y sin datos atípicos.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+ 
+# Valores extremos por variable
+outliersDeaths <- boxplot.stats(data_overall_lab$Deaths)$out
+outliersPopulation <- boxplot.stats(data_overall_lab$Population)$out
+outliersAgeAdjustedDeathRate <- boxplot.stats(data_overall_lab$AgeAdjustedDeathRate)$out
+outliersPercentageOfTotalDeaths <-
+  boxplot.stats(data_overall_lab$PercentageOfTotalDeaths)$out
+outliersBingeDrinkingFrecuencyAdults <-
+  boxplot.stats(data_overall_lab$HBingeDrinkingFrecuencyAdults)$out
+
+# Índice de los outliers
+idxOutliersDeaths <- 
+  which(data_overall_lab$Deaths %in% outliersDeaths)
+idxOutliersPopulation <- 
+  which(data_overall_lab$Population %in% outliersPopulation)
+idxOutliersAgeAdjustedDeathRate <- 
+  which(data_overall_lab$AgeAdjustedDeathRate %in% outliersAgeAdjustedDeathRate)
+idxOutlierPercentageOfTotalDeaths <- 
+  which(data_overall_lab$PercentageOfTotalDeaths %in% outliersPercentageOfTotalDeaths)
+idxOutlierBingeDrinkingFrecuencyAdults <- 
+  which(data_overall_lab$BingeDrinkingFrecuencyAdults %in% outliersBingeDrinkingFrecuencyAdults)
+
+# Vector de ayuda para identificar outliers
+idxOutlierAll <- c(
+  idxOutliersDeaths, 
+  idxOutliersPopulation,
+  idxOutliersAgeAdjustedDeathRate, 
+  idxOutlierPercentageOfTotalDeaths, 
+  idxOutlierBingeDrinkingFrecuencyAdults 
+  ) |> 
+  unique() |> 
+  sort()
+esOutlier <- 1:nrow(data_overall_lab) %in% idxOutlierAll
+
+# data_overallset sin outliers
+data_overall_outliers_lab <- data_overall_lab[esOutlier,]
+data_overall_inliers_lab <- data_overall_lab[!esOutlier,]
+```
+
+```{r}
+# Limpieza de objetos intermedios de la tarea
+rm(list = c(
+  'esOutlier',
+  'idxOutlierAll',
+  'idxOutlierBingeDrinkingFrecuencyAdults',
+  'idxOutlierHeavyDrinkingAdults',
+  'idxOutlierPercentageOfTotalDeaths',
+  'idxOutliersAgeAdjustedDeathRate',
+  'idxOutliersDeaths',
+  'idxOutliersPopulation',
+  'outliersAgeAdjustedDeathRate',
+  'outliersBingeDrinkingFrecuencyAdults',
+  'outliersDeaths',
+  'outliersHeavyDrinkingAdults',
+  'outliersPercentageOfTotalDeaths',
+  'outliersPopulation'
+))
+```
+:::
+
+## Salidas del subproceso
+
+Se crearon los siguientes objetos, diferenciados entre sí por la presencia o ausencia de tres características: datos estratificados por sexo, Inliers y Outliers:
+
+| Objeto                      | Datos por sexo | Inliers | Outliers |
+|-----------------------------|----------------|---------|----------|
+| `data_lab`                  | Sí             | Sí      | Sí       |
+| `data_inliers_lab`          | Sí             | Sí      | No       |
+| `data_outliers_lab`         | Sí             | No      | Sí       |
+| `data_overall_lab`          | No             | Sí      | Sí       |
+| `data_overall_inliers_lab`  | No             | Sí      | No       |
+| `data_overall_outliers_lab` | No             | No      | Sí       |
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Objeto `data_lab`
+saveRDS(
+  data_lab,
+  here::here('data', 'lab', 'data_lab.rds')
+  )
+saveRDS(
+  data_inliers_lab,
+  here::here('data', 'lab', 'data_inliers_lab.rds')
+  )
+saveRDS(
+  data_outliers_lab,
+  here::here('data', 'lab', 'data_outliers_lab.rds')
+  )
+
+# Objeto `data_overall_lab`
+saveRDS(
+  data_overall_lab,
+  here::here('data', 'lab', 'data_overall_lab.rds')
+  )
+saveRDS(
+  data_overall_inliers_lab,
+  here::here('data', 'lab', 'data_overall_inliers_lab.rds')
+  )
+saveRDS(
+  data_overall_outliers_lab,
+  here::here('data', 'lab', 'data_overall_outliers_lab.rds')
+  )
+```
+
+### Limpieza
+
+```{r limpieza}
+
+```

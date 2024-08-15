@@ -1,0 +1,50 @@
+project:
+  type: book
+  output-dir: docs
+book:
+  title: Análisis cluster no jerárquico de los indicadores de salud relacionados con el consumo de alcohol del año 2021 en los estados de US
+  subtitle: TFM - Máster de estadística aplicada para la ciencia de datos con R software.
+  author: Teodoro José Martínez Arán
+  date: 2024-08-13
+  date-format: iso
+  chapters:
+    - index.qmd
+    - ./notebooks/01_resumen.qmd
+    - ./notebooks/02_agradecimientos.qmd
+    - ./notebooks/03_indice.qmd
+    - ./notebooks/04_Introduccion.qmd
+    - part: "Material y Métodos"
+      chapters:
+        - ./notebooks/05_metodologia.qmd
+        - ./notebooks/05a_config.qmd
+        - ./notebooks/05b_ingesta.qmd
+        - ./notebooks/05c_limpieza.qmd
+        - ./notebooks/05d_eda.qmd
+        - ./notebooks/05e_transformacion.qmd
+        - ./notebooks/05f_analysis.qmd
+    - ./notebooks/06_resultados.qmd
+    - ./notebooks/07_discusion.qmd
+    - ./notebooks/08_conclusiones.qmd
+
+    - part: "Anexos"
+      chapters:
+        - ./notebooks/anexoA.qmd
+    - ./references/references.qmd
+
+bibliography: references/references.bib
+engine: knitr
+format:
+  html:
+    theme: cosmo
+    language: ./config/language_es.yml
+    editor: source
+    toc: true
+    toc-depth: 4
+    toc-location: right
+    toc-title: Tabla de contenidos
+    number-sections: false
+    number-offset: [1,1,1,1]
+  pdf:
+    documentclass: scrreprt
+  docx:
+    date: 2024-14-08

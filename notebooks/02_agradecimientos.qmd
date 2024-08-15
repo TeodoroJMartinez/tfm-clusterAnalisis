@@ -1,0 +1,20 @@
+---
+author: Teodoro José Martínez Arán
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+## Agradecimientos {.unnumbered}
+
+Este trabajo se ha podido realizar gracias al trabajo, apoyo, consejo o recursos de varias personas o instituciones a las que el autor quiere mostrar su gratitud.
+
+-   Mis profesores, Rosana Ferrero y Juan Luis López, por su profesionalidad, amabilidad y cercanía a lo largo de todo el curso
+-   Máxima Formación, por la calidad de los contenidos del Máster, y la seriedad en la gestión del mismo
+-   El *Centers for Disease Control and Prevention, National Center for Chronic Disease Prevention and Health Promotion, Division of Population Health*, por la publicación en abierto de los datos utilizados en este trabajo
+-   Mi familia, por el apoyo y comprensión demostrados durante todo el desarrollo del máster
+

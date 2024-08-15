@@ -1,0 +1,12 @@
+## Trabajo fin de Máster {.unnumbered}
+
+![](notebooks/images/logo_nebrija.jpg)
+
+![](notebooks/images/logo_maxima_formacion.jpg)
+
+|                          |                            |
+|--------------------------|----------------------------|
+| **Autor**                | Teodoro José Martínez Arán |
+| **Tutor**                | Juan Luis López Garrancho  |
+| **Fecha**                | 13 de Agosto de 2024       |
+| **Entidad colaboradora** | Máxima Formación S.L.      |

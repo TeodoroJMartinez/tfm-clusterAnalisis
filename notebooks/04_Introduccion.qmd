@@ -1,0 +1,108 @@
+---
+author: Teodoro José Martínez Arán
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+# Introducción {.unnumbered}
+
+::: {.callout-note title="INTRODUCCIÓN: ¿qué se estudia, y por qué?" collapse="true"}
+-   Motivación o justificación (Por qué hemos elegido este tema para el trabajo, por qué es relevante esta investigación)
+-   Objetivo concreto de este estudio (Antecedentes, estado de la cuestión, supuesto o hipótesis de trabajo)
+
+Consejos
+
+-   Limitarla al propósito, alcance y racional del estudio
+-   Orden de lo general a lo particular:
+    -   Estado de conocimiento del problema antes del artículo. Revisión de antecedentes necesaria para definir problema (reducir referencias a lo indispensable)
+    -   Definición del problema
+    -   Sujeto de estudio (si lo hay) empleado para falsificar hipótesis
+    -   Hipótesis/objetivo/preguntas
+    -   Estrategia
+:::
+
+## A - Justificación de la necesidad para la organización
+
+-   Se estima que el uso nocivo del alcohol causa cada año 2,5 millones de muertes a nivel mundial [@organizaciónmundialdelasalud2010]. Unas 178,000 personas mueren cada año en los Estados Unidos debido a una ingesta excesiva de alcohol [@esser2024], con una de las tasas más altas del mundo [@ortiz-ospina2016].
+-   En Europa, se estima que el alcohol es responsable de unas 195.000 muertes al año. Los países nórdicos y de Europa del este presentan tasas de mortalidad más altas que los del sur. Hasta 1 de cada 4 muertes en hombres jóvenes y 1 de cada 10 muertes en mujeres jóvenes se deben al consumo excesivo de alcohol.
+-   En España, el alcohol fue la sustancia psicoactiva más consumida en 2017 [@ministeriodesanidad]. Se estima que durante el periodo 2010-2017 produjo anualmente unas 15.489 muertes (74% en hombres).
+
+<iframe src="https://ourworldindata.org/grapher/death-rates-substance-disorders?tab=map" loading="lazy" style="width: 100%; height: 600px; border: 0px none;" allow="web-share; clipboard-write">
+
+</iframe>
+
+-   El concepto de bebida excesiva incluye la ingesta episódica de grandes cantidades de alcohol (botellones), grandes bebedores, y cualquier ingesta durante el embarazo o por personas menores de 21 años.
+-   La ingesta de alcohol contribuye al desarrollo de más de 200 problemas de salud y lesiones, así como a muerte prematura y es uno de los principales factores de riesgo asociado a enfermedades crónicas o no transmisibles [@alcohol1988]. Las muertes relacionadas con la ingesta excesiva de alcohol se deben tanto a patologías directamente relacionadas con el consumo (intoxicaciones etílicas, cirrosis), como a patologías parcialmente relacionadas con el consumo, como los accidentes de tráfico [@esser2024], o el cáncer [@bagnardi2014].
+-   Las políticas que disminuyen la accesibilidad al alcohol, o que lo encarecen, pueden prevenir el consumo excesivo de alcohol y sus consecuencias negativas. Los individuos, las organizaciones, las comunidades y los estados pueden apoyarse en estrategias probadas para reducir los daños relacionados con el alcohol, y mejorar la salud y la seguridad [@esser2024a].
+
+### A1 - Alineación del proyecto de investigación con los objetivos estratégicos de la organización
+
+Este estudio está alineado con distintas estrategias mundiales, europeas y nacionales enfocadas a reducir los riesgos para la salud derivados del consumo de alcohol:
+
+| Ámbito        | Estrategia                                                                                                                                                      | Descripción                                                                                                                                                                                                                                                                                          |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Mundial       | Estrategia Mundial para la Reducción del consumo de alcohol [@organizaciónmundialdelasalud2010]                                                                 | Estrategia enfocada en la concienciación, mejora de la evidencia científica, apoyo técnico a la formulación de política de salud pública, fortalecimiento de alianzas y mejora de sistemas de vigilancia y monitorización de los efectos negativos para la salud relacionados con el alcohol         |
+| Mundial       | Estrategia SAFER: Un mundo sin daños relacionados con el alcohol [@elpaque2020]                                                                                 | Iniciativa enfocada en disminuir de la disponibilidad del alcohol, reducir las situaciones que fomentan el consumo, implementar acciones rápidas de screening, intervenciones breves o tratamiento, reducir el patrocinio y publicidad, y elevar el precio mediante impuestos y políticas de precios |
+| Unión Europea | [Estrategia RARHA: Reducing Alcohol Related Harm](https://www.rarha.eu/Pages/default.aspx)                                                                      | Estrategia enfocada en crear mejor evidencia relacionada con el consumo del alcohol, e implementar herramientas de monitorización de los efectos negativos en la salud relacionados con el alcohol                                                                                                   |
+| España        | [Estrategia de Promoción de la Salud y Prevención en el Sistema Nacional de Salud](https://www.sanidad.gob.es/areas/promocionPrevencion/estrategiaSNS/home.htm) | La Estrategia de Promoción de la Salud y Prevención en el SNS propone el desarrollo progresivo de intervenciones dirigidas a ganar salud y a prevenir las enfermedades, las lesiones y la discapacidad. Entre ellas, existe una línea dedicada al consumo de alcohol                                 |
+
+## B - Descripción del estudio
+
+### B1 - Objetivo del estudio y preguntas de investigación
+
+EL objetivo del estudio fue mejorar el conocimiento de los determinantes de salud que se relacionan con un consumo excesivo de alcohol en los ciudadanos del país con mayor letalidad por esta causa (Estados Unidos), para posibilitar el diseño de políticas de salud pública más efectivas.
+
+El estudio se encaminó a responder a las siguiente preguntas:
+
+-   A - ¿Pueden clasificarse los pacientes en varios grupos similares entre sí, en función de los resultados de los indicadores relacionados con el consumo de alcohol?
+
+### B2 - Metodología de análisis de datos
+
+Para responder a las preguntas de investigación se utilizaron las siguientes técnicas de análisis de datos:
+
+-   Análisis exploratorio de los datos
+-   Análisis cluster para identificar patrones de agrupación
+
+### B3 - Datos utilizados en el análisis
+
+Para el análisis se utilizaron los siguientes datos:
+
+| Datos                                                           | Fuente                                                                                                                                                                      | Justificación                                                                        |
+|-----------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| 1\. Indicadores de salud relacionados con el consumo de alcohol | [U.S. Chronic Disease Indicators (CDI), 2023 Release](https://data.cdc.gov/Chronic-Disease-Indicators/U-S-Chronic-Disease-Indicators-CDI-2023-Release/g4ie-h725/about_data) | Datos necesarios para hacer el análisis de agrupación (variables predictoras)        |
+| 2\. Tasas de mortalidad relacionadas con el consumo de alcohol  | [U.S. Underlying Cause of Death, 2018-2022, Single Race](https://wonder.cdc.gov/controller/datarequest/D158;jsessionid=3AE6F220F03846E2644071916BBF)                        | Datos de la variable respuesta a predecir en el análisis de regresión                |
+| 3\. Códigos FIPS de los estados de EEUU                         | [Dataset with FIPS codes for US states and counties](https://search.r-project.org/CRAN/refmans/tidycensus/html/fips_codes.html)                                             | Tabla maestra con los códigos FIPS identificativos de los estados y condados de EEUU |
+
+## C - Gestión del proyecto de investigación
+
+### C1 - Gobernanza de datos
+
+Se utilizaron fuentes de datos abiertas con datos agregados para el análisis, por lo que no fue necesario gestionar aspectos de privacidad de datos, acceso, seguridad o propiedad intelectual.
+
+### C2 - Promotores del estudio
+
+El estudio fue desarrollado como ejercicio para el Máster de Estadística aplicada con R, (Máxima Formación y Universidad de Nebrija).
+
+### C3 - Destinatarios del estudio
+
+Claustro docente del Máster.
+
+### C4 - Tecnología utilizada para el análisis
+
+-   Los datos se obtuvieron de fuentes de datos abiertas, o de datasets incluidos en paquetes de R
+-   Todas las fases del análisis (ingesta, limpieza, análisis exploratorio, transformación, análisis y comunicación) se realizaron con el software R
+
+::: {.callout-note title="Configuración del equipo utilizado para el análisis" collapse="true"}
+La configuración del equipo utilizada en este análisis fue la siguiente:
+
+```{r}
+#| code-fold: true
+
+sessionInfo()
+```
+:::

@@ -1,0 +1,47 @@
+---
+subtitle: "Material y métodos"
+author: Teodoro José Martínez Arán
+format: html
+editor: source
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Tabla de contenidos
+number-sections: true
+number-offset: [1,1,1,1]
+---
+
+# Subproceso 05f - Análisis {.unnumbered}
+
+## Descripción del análisis
+
+Metodología destinada destinado a agrupar observaciones en base a su similitud, de modo que las observaciones pertenecientes a cada uno de los grupos tengan características similares.
+
+```{r}
+#| code-fold: true
+#| info: false
+#| warning: false
+#| code-overflow: wrap
+
+# Configuración
+## Establecer una semilla aleatoria para el análisis
+set.seed(2024)
+## Impedir que los números grandes se muestren con notación científica
+options(scipen = 999)
+```
+
+## Acciones incluidas en el análisis
+
+Se llevaron a cabo un conjunto de análisis cluster (5 en total), siguiendo la siguiente metodología:
+
+-   05fa - Selección de los datos adecuados para el análisis cluster
+-   05fb - Estandarización de valores numéricos
+-   05fc - Cálculo de la distancia entre observaciones
+-   05fd - Análisis de tendencia de agrupación
+-   05fe - Elección del método y la vinculación de grupos
+-   05ff - Elección del número de grupos finales de forma arbitraria basados en ciertos estadísticos de agrupación.
+-   05fg - Representación e interpretación de los resultados.
+-   05fh - Evaluación de la importancia de las variables
+-   05fi - Visualización de las agrupaciones cluster
+-   05fj - Validación de la agrupación
+-   05fk - Resumen de los resultados obtenidos

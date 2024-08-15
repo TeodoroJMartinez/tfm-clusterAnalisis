@@ -1,0 +1,570 @@
+---
+title: "Análisis de correlación"
+author: "Teodoro J. Martínez Arán"
+format: html
+editor: source
+toc: true
+toc-depth: 5
+toc-location: left
+number-sections: true
+---
+## Carga / instalación de paquetes y datos
+```{r}
+
+## Carga de paquetes generales
+if (!require(BiocManager)) install.packages("BiocManager")
+if (!require(here)) install.packages('here')
+
+## Carga / instalación de paquetes
+if (!require(ggplot2)) install.packages('ggplot2')
+if (!require(MASS)) install.packages('MASS')
+
+## Análisis de correlación
+if (!require(correlation)) install.packages('correlation')
+if (!require(Hmisc)) install.packages('Hmisc')
+if (!require(graph)) BiocManager::install('graph') ## Dependiencia de ggm
+if (!require(ggm)) install.packages('ggm')
+if (!require(polycor)) install.packages('polycor')
+if (!require(ppcor)) install.packages('ppcor')
+
+## Opcionales
+#if (!require(easystats)) install.packages('easystats')
+#if (!require(Rcmdr)) install.packages('Rcmdr')
+
+```
+
+```{r}
+## Carga datos
+data(iris)
+```
+
+## Gráfico de la correlación - Scatterplot
+
+```{r}
+### Paso 1 - Crear el objeto ggplot2
+  g <- ggplot2::ggplot(
+    data = iris,
+    mapping = ggplot2::aes(
+      x = Petal.Length,
+      y = Petal.Width,
+      ### OPCIONAL - Se puede agrupar por los niveles de un factor
+      color = Species
+    )
+  ) +
+
+    ### Paso 2 - Añadir la geometría `ggplot2::geom_point()`
+    ggplot2::geom_point() +
+
+    ### Paso 3 - Personalizar las etiquetas de los ejes
+    ggplot2::labs(
+      title = 'Correlación entre la longitud y la anchura de pétalos',
+      subtitle = 'Dataset `iris`. Estratificación por especie',
+      x = 'Petal.Length',
+      y = 'Petal.Width',
+      color = 'Species'
+    ) +
+
+    ### Paso 4 - Añadir la estética `ggplot2::geom_smooth()`
+    ggplot2::geom_smooth(
+      method = 'rlm',
+      alpha = 0.1,
+
+      ### Paso 5 - Personalizar el color del intervalo de confianza
+      ggplot2::aes(fill = Species)
+    )
+
+  g
+```
+
+## Medición de la correlación
+
+### Resumen ejecutivo
+
++ La medida cruda de correlación entre dos variables es la covarianza
++ Si se estandariza la covarianza, se obtiene el Coeficiente de correlación de Pearson, $r$
++ El coeficiente de correlación cae entre -1 y +1
++ Un coeficiente de +1 indica correlación positiva perfecta, un coeficiente de -1 indica correlación negativa perfecta, y un coeficiente de 0 indica que no existe correlación linear en absoluto
++ El coeficiente de correlación se utiliza habitualmente como medida del tamaño de un efecto:
+  + valores de $\pm .1$ representan un efecto pequeño
+  + valores de $\pm .3$ representan un efecto moderado
+  + valores de $\pm .5$ representan un efecto grande
++ Sin embargo, debe interpretarse el efecto de la correlación dentro del contexto del análisis de la literatura previo al estudio, en lugar de confiar a ciegas en este tipo de valoraciones.
++ La función preferida para el análisis de correlación (Ago-2023) es `correlation::correlation()`
++ Si bien se pueden calcular a mano, utilizaremos las siguientes funciones de r para la medición de la correlación:
+
+|Función|Paquete|Utilidad|
+|-|-|---|
+|`cov()`|stats|Covarianza|
+|`cor()`|stats|Coeficiente de correlación|
+|`cor.test()`|stats|· Test de hipótesis (t-test) para el estimador del coeficiente de correlación|
+||· Intervalo de confianza para el estimador del coeficiente de correlación|
+|`correlation()`|correlation|Análisis completo|
+
+### Análisis de elección: `correlation::correlation()`
+La función `correlation::correlation()` ofrece:
+
++ Sintaxis estilo **tidyverse**
++ Análisis multivariable
++ Estimación del coeficiente de correlación por varios métodos
++ Estimación del intervalo de confianza
++ Test de hipótesis para la estimación
++ *p-value* del test de hipótesis.
+
+```{r}
+iris |> 
+  correlation::correlation(
+    ## pearson" (default), "kendall", "spearman" (but see also the robust argument), "biserial", "polychoric", "tetrachoric", "biweight", "distance", "percentage" (for percentage bend correlation), "blomqvist" (for Blomqvist's coefficient), "hoeffding" (for Hoeffding's D), "gamma", "gaussian" (for Gaussian Rank correlation) or "shepherd" (for Shepherd's Pi correlation). 
+    ## Setting "auto" will attempt at selecting the most relevant method (polychoric when ordinal factors involved, tetrachoric when dichotomous factors involved, point-biserial if one dichotomous and one continuous and pearson otherwise)
+    method = "spearman",
+    ## Correction method for frequentist correlations. Can be one of "holm" (default), "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "somers" or "none". See stats::p.adjust() for further details.
+    p_adjust = "holm",
+    ci = 0.95,
+    bayesian = FALSE,
+    bayesian_prior = "medium",
+    bayesian_ci_method = "hdi",
+    bayesian_test = c("pd", "rope", "bf"),
+    redundant = FALSE,
+    include_factors = FALSE,
+    partial = FALSE,
+    partial_bayesian = FALSE,
+    multilevel = FALSE,
+    ranktransform = FALSE,
+    winsorize = FALSE,
+    verbose = TRUE,
+    standardize_names = getOption("easystats.standardize_names", FALSE),
+  )
+```
+
+### Correlación cruda - Covarianza
+#### Método de cálculo en R
+La covarianza es una medida sencilla de la correlación de dos variables.
+
+Se calcula siguiendo los siguientes pasos:
+
++ 1.- Calcular la media de todas las observaciones de la muestra para cada variable
++ 2.- Restar la media a cada observación, para valorar cuánto se desvían de la media
++ 3.- Calcular los productos cruzados de las desviaciones respecto a su media de las observaciones de las variables
++ 4.- Calcular la media de los productos cruzados de las desviaciones
+
+```{r}
+## Paso 1 Calcular la media de todas las observaciones de la muestra para cada variable
+meanLength <- mean(iris$Sepal.Length)
+meanWidth <- mean(iris$Sepal.Width)
+
+## 2.- Restar la media a cada observación, para valorar cuánto se desvían de la media
+iris$Length.Deviation <- iris$Sepal.Length - meanLength
+iris$Width.Deviation <- iris$Sepal.Width - meanWidth
+
+## 3. Calcular los productos cruzados de las desviaciones respecto a su media de las observaciones de las variables
+iris$crossProductDeviation <- iris$Length.Deviation * iris$Width.Deviation
+
+## 4.- Calcular la media de los productos cruzados de las desviaciones
+covariance <- sum(iris$crossProductDeviation) / (nrow(iris) - 1)
+
+covariance
+```
+Existe una función en R que la calcula directamente:`cov()`
+```{r}
+cov(
+  x = iris$Sepal.Length,
+  y = iris$Sepal.Width
+)
+```
+
+#### Interpretación
+
+La covarianza resume cómo varían respecto a su media cada una de las observaciones de las variables de interés. 
+
+Permite obtener información sobre el SENTIDO de la correlación:
+
++ Si ambas variables se desvían positivamente respecto a su media, su producto será positivo
++ Si una variable se desvía positivamente y la otra negativamente, su producto será negativo
++ Si no existe correlación, se desviarán al azar unas veces en sentido negativo y otras en sentido positivo, y el valor de la covarianza se aproximará a cero
+
+La covarianza no permite obtener información de la FUERZA ni de la FORMA de la asociación:
+
++ La covarianza depende de la escala utilizada para medir las variables
++ La covarianza no permite comparar la fuerza de asociación entre distintas variables
++ La forma depende de la escala utilizada
+
+### Correlación estandarizada - Coeficiente de correlación de Pearson
+#### Método de cálculo
+
+Para evitar la dependencia de la escala de medida, podemos estandarizar los valores de las observaciones de las variables dividiendo por la desviación estándar.
+
+Dado que estamos estandarizando el producto de dos desviaciones, dividiremos por el producto de las respectivas desviaciones estándar para cada variable:
+
++ Paso 1 - Calcular la covarianza
++ Paso 2 - Calcular las desviaciones estándar de cada variable
++ Paso 3 - Dividir la covarianza por el producto de las desviaciones estándar
+```{r}
+## Paso 1 - Calcular la covarianza
+covariance <- cov(
+  x = iris$Sepal.Length,
+  y = iris$Sepal.Width
+)
+
+## Paso 2 - Calcular las desviaciones estándar de cada variable
+sdLength <- sd(iris$Sepal.Length)
+sdWidth <- sd(iris$Sepal.Width)
+
+## Paso 3 - Dividir la covarianza por el producto de las desviaciones estándar
+corPearson <- covariance / (sdLength * sdWidth)
+
+corPearson
+```
+Existe una función en R que calcula el coeficiente de correlación de Pearson directamente: `cor()`
+```{r}
+r <- cor(
+  x = iris$Sepal.Length,
+  y = iris$Sepal.Width,
+  method = c("pearson", "kendall", "spearman")
+)
+r
+```
+
+
+
+#### Interpretación
+
+El coeficiente de correlación de Pearson hereda las propiedades de la variable, sin alguno de sus defectos:
+
+Permite obtener información sobre el SENTIDO de la correlación:
+
++ Si ambas variables se desvían positivamente respecto a su media, su producto será positivo, hasta un máximo de +1
++ Si una variable se desvía positivamente y la otra negativamente, su producto será negativo, hasta un mínimo de -1
++ Si no existe correlación, se desviarán al azar unas veces en sentido negativo y otras en sentido positivo, y el valor de la covarianza se aproximará a cero
+
+Además, permite permite obtener información de la FUERZA de la asociación:
+
++ Valores en torno a 0 indican una correlación débil
++ Valores en torno a -1 o +1 indican una correlación fuerte
+
+Como limitación, no se puede utilizar en variables que no sigan la distribución normal, que no sean estrictamente monótonas, o que sean discretas.
+
+::: {.callout-caution collapse="true" title="Ojocuidao - Correlación y causalidad"}
+Debe tenerse cuidado al inferir causalidad cuando se interpretan los coeficientes de correlación. Esto se debe a dos motivos:
+
++ No podemos asumir la causalidad entre dos variables correlacionadas porque puede existir una tercera variable, medida o no, que esté influyendo en los resultados.
++ Los coeficientes de correlación no proporcionan ninguna información sobre la dirección de la causalidad. 
+  + Esto es: Aun asumiendo que no exista una tercera variable influyente, que A esté correlacionada con B puede significar, desde el punto de vista estadístico, tanto que A pueda estar influyendo en B como que B pueda estar influyendo en A, aunque una de las dos opciones no tenga sentido en el mundo real.
+:::
+
+#### Test de hipótesis estimación del coeficiente de correlación
+Se evalúan las siguientes hipótesis:
+
++ $H_0: \rho = 0$
++ $H_1: \rho \neq 0$
+
+Se pueden utilizar dos métodos para evaluar este test de hipótesis:
+
+##### Opción 1 - t-test
+  + Es la opción más habitual. Se realiza un t-test con N-2 grados de libertad.
+  $$t_r = \frac{r\sqrt{N-2}}{\sqrt{1-r^2}}$$
+  + Este cálculo se puede realizar directamente con la función `cor.test()`
+```{r}
+## Cálculo manual
+t <- r*sqrt(nrow(iris) - 2) / sqrt(1 - r^2)
+t
+## Cálculo con la función `cor.test()`
+cor.test(
+  x = iris$Sepal.Length,
+  y = iris$Sepal.Width
+  )
+```
+##### Opción 2 - Test z-score
+  + Podemos ajustar `r` de modo que su distribución muestra sea normal mediante la siguiente transformación (Fisher, 1921): 
+  $$z_r = \frac{1}{2}\ln \left({\frac{1+r}{1-r}} \right), ~~~ SE_{z_r} = \frac{1}{\sqrt{N-3}}$$
+  + Podemos deshacer la transformación mediante la fórmula: 
+  $$r = \frac{e^{2z_r}-1}{e^{2z_r}+1}$$
+  + Gracias a esta transformación, para comprobar si el factor $Z_r$ es distinto de la media (0), se le resta la media y se divide por la desviación estándar 
+  $$z = \frac{z_r-0}{SE_{z_r}}$$
+```{r}
+## Calcular de Zr
+zr <- 1/2 * log((1 + r) / (1 - r))
+## Calcular SEzr
+se_zr <- 1 / sqrt(nrow(iris) - 3)
+## Calcular el Z-score
+z = zr / se_zr
+## Comprobar el grado de significación del Z obtenido
+pnorm(z)
+```
+
+#### Intervalo de confianza
+
+Podemos utilizar la transformación de Fischer comentada en el apartado anterior:
+```{r}
+## Cálculo de los extremos del IC al 95 % con la transformación de Fischer
+zr_upper <- zr + 1.96 * se_zr
+zr_lower <- zr - 1.96 * se_zr
+## Deshacer la transformación
+r_upper <- ((exp(2*zr_upper) - 1)/(exp(2*zr_upper) + 1))
+r_lower <- ((exp(2*zr_lower) - 1)/(exp(2*zr_lower) + 1))
+```
+La función `cor.test()` ofrece los intervalos de confianza del valor estimado de r directamente:
+
+```{r}
+cor.test(
+  x = iris$Sepal.Length,
+  y = iris$Sepal.Width
+)
+```
+
+## Correlación bivariada
+### Procedimiento general para análisis de correlación en R
+
+### Coeficiente de correlación de Pearson
+#### Supuestos del coeficiente r de Pearson
+#### Cálculo del coeficiente r de Pearson con R
+#### Interpretación con $R^2$
+### Coeficiente de correlación de Spearman
+### $\tau$ de Kendall
+### Bootstrapping correlations
+### Correlaciones biseriadas y punto-biseriadas
+
+## Correlación parcial
+### Teoría
+### Correlación parcial usando R
+#### Pairwise partial correlation of a matrix, controlling by one variable
+[Pairwise partial correlation of a matrix, controlling by one variable](https://stackoverflow.com/questions/30198968/pairwise-partial-correlation-of-a-matrix-controlling-by-one-variable)
+
+```{r}
+library(ppcor)
+
+iris_num <- iris |> 
+  dplyr::select(-Species)
+
+sapply(
+  1:(ncol(iris_num) - 1), 
+  function(x) sapply(
+    1:(ncol(iris_num) - 1), 
+    function(y) {
+      if (x == y) 1
+      else pcor.test(
+        iris_num[ ,x], iris_num[ ,y],
+        iris_num[ ,ncol(iris_num)])$estimate
+      }
+    )
+  )
+```
+
+#### How to perform partial correlation analysis among multiple columns and controlling by multiple covariates
+
+[How to perform partial correlation analysis among multiple columns and controlling by multiple covariates](https://stackoverflow.com/questions/62688168/how-to-perform-partial-correlation-analysis-among-multiple-columns-and-controlli)
+```{r}
+# load "ggm" packages to perform partial correlation analysis
+library(ggm)
+
+# subset mtcars dataset and make some datapoints as missing values
+mydata <- cbind(mtcars[1:8])
+
+# perform partial correlation analysis among the first 6 columns with the last two columns as covariates
+sapply(
+  1:(ncol(mydata) - 2), 
+  function(x) sapply(
+    1:(ncol(mydata) - 2), 
+    function(y) {
+      if (x == y) 1
+      else ggm::pcor(
+        c(x, y, 7, 8),
+        var(mydata)
+        )
+      }
+    )
+  )
+
+
+```
+
+### Correlaciones semiparciales (part)
+
+## Comparación de correlaciones
+### Comparando rs independientes
+### Comparando rs dependientes
+
+## Cálculo del tamaño del efecto
+
+## Informe del resultado
+
+## Función para test de hipótesis de correlación
+Creamos una función para realizar los test de hipótesis de correlación y que muestre la interpretación en formato APA, en español e inglés:
+```{r}
+correlationAnalysis <- function( 
+  ## Test de hipótesis para la Correlación Agriculture-Examination
+  var_x,
+  var_y,
+  meaning_x_sp = 'Descripción variable X',
+  meaning_y_sp = 'Descripción variable Y',
+  meaning_x_en = 'Description variable X',
+  meaning_y_en = 'Description variable Y', 
+  alternative = c("two.sided", "less", "greater"),
+  metodo = c("pearson", "kendall", "spearman"),
+  exacto = NULL,
+  interv.confianza = 0.95,
+  continuidad = FALSE
+  ){
+  eval(
+    parse(
+      text = paste0(
+        'corTest <<- cor.test(',
+        'x = var_x, ',
+        'y = var_y, ',
+        'method = metodo, ', 
+        'exact = exacto, ',
+        'conf.level = interv.confianza, ',
+        'continuity = continuidad',
+        ')'
+      )
+    )
+  )
+  
+  corTest$interpretacion <<- list(
+    existeCorrelacion_sp = dplyr::case_when(
+      corTest$p.value >= 0.05 ~ 'No existe',
+      corTest$p.value <  0.05 ~ 'Existe' 
+    ),
+    existeCorrelacion_en = dplyr::case_when(
+      corTest$p.value >= 0.05 ~ 'There was no',
+      corTest$p.value <  0.05 ~ 'There was' 
+    ),
+    sentidoCorrelacion_sp = dplyr::case_when(
+      sign(corTest$estimate) ==  1 ~ 'positiva',
+      sign(corTest$estimate) == -1 ~ 'negativa'
+    ),
+    sentidoCorrelacion_en = dplyr::case_when(
+      sign(corTest$estimate) ==  1 ~ 'positive',
+      sign(corTest$estimate) == -1 ~ 'negative'
+    ),
+    fuerzaCorrelacion_sp = dplyr::case_when(
+      abs(corTest$estimate) == 1                                  ~ 'perfecta',
+      abs(corTest$estimate) <  1   & abs(corTest$estimate) >= 0.8 ~ 'muy fuerte',
+      abs(corTest$estimate) <  0.8 & abs(corTest$estimate) >= 0.6 ~ 'fuerte',
+      abs(corTest$estimate) <  0.6 & abs(corTest$estimate) >= 0.4 ~ 'moderada',
+      abs(corTest$estimate) <  0.4 & abs(corTest$estimate) >= 0.2 ~ 'débil',
+      abs(corTest$estimate) <  0.2 & abs(corTest$estimate) >= 0   ~ 'muy débil o inexistente'
+    ),
+    fuerzaCorrelacion_en = dplyr::case_when(
+      abs(corTest$estimate) == 1                                  ~ 'perfect',
+      abs(corTest$estimate) <  1   & abs(corTest$estimate) >= 0.8 ~ 'very strong',
+      abs(corTest$estimate) <  0.8 & abs(corTest$estimate) >= 0.6 ~ 'strong',
+      abs(corTest$estimate) <  0.6 & abs(corTest$estimate) >= 0.4 ~ 'moderate',
+      abs(corTest$estimate) <  0.4 & abs(corTest$estimate) >= 0.2 ~ 'weak',
+      abs(corTest$estimate) <  0.2 & abs(corTest$estimate) >= 0   ~ 'very weak or inexistent'
+    ),
+    significacionCorrelacion = dplyr::case_when(
+      corTest$p.value <  0.001                            ~ 'p < .001',
+      corTest$p.value <  0.01 & corTest$p.value >=  0.001 ~ 'p < .01',
+      corTest$p.value <  0.05 & corTest$p.value >=  0.01  ~ 'p < .05',
+      corTest$p.value >= 0.05                             ~ paste0(
+        'p = ', 
+        round(corTest$p.value, 3)
+      )
+    )
+  )
+  
+  corTest$interpretacion$testApa <<- paste0(
+    '($\\hat\\rho$ (', 
+    nrow(swiss) - 2,
+    ') = ', 
+    round(corTest$estimate, 2),
+    ', ',
+    corTest$interpretacion$significacionCorrelacion,
+    ')'
+  )  
+
+    corTest$interpretacion$texto_sp <- dplyr::case_when(
+      corTest$interpretacion$existeCorrelacion_sp == 'Existe' ~ paste0(
+        'Se ha calculado un test de ',
+        stringr::str_to_sentence(metodo),
+        ' para valorar la correlación entre la variable *',
+        eval(parse(text = 'meaning_x_sp')),
+        '* y la variable *',
+        eval(parse(text = 'meaning_y_sp')),
+        '*.\n\n',
+        corTest$interpretacion$existeCorrelacion_sp,
+        ' una correlación significativa, ',
+        corTest$interpretacion$sentidoCorrelacion_sp,
+        ' y ',
+        corTest$interpretacion$fuerzaCorrelacion_sp,
+        ' entre ambas variables ',
+        corTest$interpretacion$testApa,
+        '.\n'
+      ) ,
+    corTest$interpretacion$existeCorrelacion_sp == 'No existe' ~ paste0(
+        'Se ha calculado un test de ',
+        stringr::str_to_sentence(metodo),
+        ' para valorar la correlación entre la variable *',
+        eval(parse(text = 'meaning_x_sp')),
+        '* y la variable *',
+        eval(parse(text = 'meaning_y_sp')),
+        '*.\n\n',
+        corTest$interpretacion$existeCorrelacion_sp,
+        ' una correlación significativa entre ambas variables ',
+        corTest$interpretacion$testApa,
+        '.\n'
+      )
+    )
+  
+  corTest$interpretacion$texto_en <- dplyr::case_when(
+      corTest$interpretacion$existeCorrelacion_en == 'There was' ~ 
+    paste0(
+    stringr::str_to_sentence(metodo),
+    '’s rank correlation was computed to assess the relationship between variable *',
+    eval(parse(text = 'meaning_x_en')),
+    '* and variable *',
+    eval(parse(text = 'meaning_y_en')),
+    '*.\n\n',
+    corTest$interpretacion$existeCorrelacion_en,
+    ' a significative, ',
+    corTest$interpretacion$sentidoCorrelacion_en,
+    ' and ',
+    corTest$interpretacion$fuerzaCorrelacion_en,
+    ' correlation between the two variables ',
+    corTest$interpretacion$testApa,
+    '.\n'
+  ),
+  corTest$interpretacion$existeCorrelacion_en == 'There was no' ~
+    paste0(
+    stringr::str_to_sentence(metodo),
+    '’s rank correlation was computed to assess the relationship between variable *',
+    eval(parse(text = 'meaning_x_en')),
+    '* and variable *',
+    eval(parse(text = 'meaning_y_en')),
+    '*.\n\n',
+    corTest$interpretacion$existeCorrelacion_en,
+    ' significative correlation between the two variables ',
+    corTest$interpretacion$testApa,
+    '.\n'
+  )
+  )
+  
+  corTest <<- corTest
+}
+```
+
+### Ejemplo - Datos iris
+```{r}
+#| warning: false
+data(iris)
+correlationAnalysis(
+  var_x = iris$Sepal.Length,
+  var_y = iris$Sepal.Width,
+  meaning_x_sp = 'Longitud sepalo',
+  meaning_y_sp = 'Anchura sepalo',
+  meaning_x_en = 'Sepal length',
+  meaning_y_en = 'Sepal width',
+  alternative = 'two.sided',
+  metodo = 'spearman',
+  exacto = NULL,
+  interv.confianza = 0.95,
+  continuidad = FALSE
+)
+corTest
+```
+**Interpretación:**
+
+`r corTest$interpretacion$texto_sp`
+
+**Interpretation:**
+
+`r corTest$interpretacion$texto_en`
