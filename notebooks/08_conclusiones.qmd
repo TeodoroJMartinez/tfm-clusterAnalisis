@@ -11,4 +11,6 @@ number-offset: [1,1,1,1]
 
 ## Conclusiones {.unnumbered}
 
-Este estudio ofrece dos modelos de agrupación no jerárquica mediante $k$-means para indicadores de salud relacionados con el consumo de alcohol, que podrían utilizarse como apoyo a técnicas de reducción de la dimensionalidad en el análisis de datasets extensos en este dominio. Deben pro Las limitaciones identificadas en la metodología del estudio lastran la generalización de las conclusiones. Sería interesante profundizar en las características de los estados *outliers*, y en la utilidad de los dos modelos de análisis cluster para utilizarlos en modelos predictivos.
+-   Este estudio ofrece dos modelos de agrupación no jerárquica mediante $k$-means para indicadores de salud relacionados con el consumo de alcohol, que podrían utilizarse como apoyo a técnicas de reducción de la dimensionalidad en el análisis de datasets extensos en este dominio.
+-   Las limitaciones identificadas en la metodología del estudio podrían lastrar la generalización de las conclusiones, por lo que se debe ser cauto al interpretarlas.
+-   Sería interesante profundizar en las características de los estados *outliers*, y en la utilidad de los dos modelos de análisis cluster para utilizarlos en modelos predictivos.

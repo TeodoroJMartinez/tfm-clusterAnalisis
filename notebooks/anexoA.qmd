@@ -6409,6 +6409,7 @@ Al representarlo en tres dimensiones, se observa que el solapamiento es menor. P
 #| info: false
 #| warning: false
 #| code-overflow: wrap
+#| eval: false
 
 df <- data_lab[1:10]
 df$cluster <- factor(data_km4$cluster)
